@@ -1,0 +1,308 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+
+type Zone = {
+  name: string;
+  pump: string;
+  pumpCode: string;
+  zoneNumber: number;
+  id: string;
+  coordinates: [number, number][];
+};
+type Farm = { name: string; code: string; zones: Zone[]; pumps: { name: string; coordinates: [number, number] }[] };
+type Group = {
+  id: number;
+  zoneId: string;
+  species: string;
+  height: string;
+  caliper: string;
+  quantity: number;
+  status: string;
+  client: string;
+  orderNumber: string;
+  plantedOn: string;
+};
+type Activity = {
+  id: number;
+  groupId: number;
+  zoneId: string;
+  activityType: string;
+  activityDate: string;
+  details: string;
+  performedBy: string;
+};
+
+const FALLBACK_GROUPS: Group[] = [
+  { id: 1, zoneId: "F70-FRONT-01", species: "Live Oak", height: "12–14 ft", caliper: "3.5 in", quantity: 86, status: "Available", client: "", orderNumber: "", plantedOn: "2024-02-12" },
+  { id: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, status: "Tagged", client: "Palm Beach Gardens", orderNumber: "SO-2408", plantedOn: "2023-11-06" },
+  { id: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, status: "Sold", client: "Evergreen Landscape", orderNumber: "SO-2391", plantedOn: "2023-08-18" },
+  { id: 4, zoneId: "F40-WEST-05", species: "Gumbo Limbo", height: "8–10 ft", caliper: "2.5 in", quantity: 115, status: "Available", client: "", orderNumber: "", plantedOn: "2025-01-20" },
+  { id: 5, zoneId: "F25-NORTH-02", species: "Royal Poinciana", height: "10–12 ft", caliper: "3 in", quantity: 64, status: "Available", client: "", orderNumber: "", plantedOn: "2024-05-14" },
+];
+
+function FarmCanvas({ farm, selectedZone, onSelect }: { farm: Farm; selectedZone: string; onSelect: (zone: Zone) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const shapesRef = useRef<{ zone: Zone; points: { x: number; y: number }[] }[]>([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !farm?.zones.length) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const ratio = window.devicePixelRatio || 1;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    ctx.scale(ratio, ratio);
+    const all = farm.zones.flatMap((z) => z.coordinates);
+    const xs = all.map((p) => p[0]);
+    const ys = all.map((p) => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const pad = 28;
+    const scale = Math.min((width - pad * 2) / (maxX - minX), (height - pad * 2) / (maxY - minY));
+    const project = ([x, y]: [number, number]) => ({ x: pad + (x - minX) * scale, y: height - pad - (y - minY) * scale });
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#ebe7dc";
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = "rgba(104,91,65,.12)";
+    ctx.lineWidth = 1;
+    for (let x = 20; x < width; x += 38) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
+    for (let y = 16; y < height; y += 38) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+
+    shapesRef.current = farm.zones.map((zone) => ({ zone, points: zone.coordinates.map(project) }));
+    shapesRef.current.forEach(({ zone, points }) => {
+      ctx.beginPath();
+      points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+      ctx.closePath();
+      const selected = zone.id === selectedZone;
+      ctx.fillStyle = selected ? "#de6f39" : zone.pump.toLowerCase().includes("north") || zone.pump.toLowerCase().includes("west") ? "#a9c78e" : "#c8d7a8";
+      ctx.strokeStyle = selected ? "#7b321a" : "#607052";
+      ctx.lineWidth = selected ? 2.5 : 1;
+      ctx.fill();
+      ctx.stroke();
+      if (selected) {
+        const center = points.reduce((a, p) => ({ x: a.x + p.x / points.length, y: a.y + p.y / points.length }), { x: 0, y: 0 });
+        ctx.fillStyle = "#fff9ef";
+        ctx.font = "700 11px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(zone.id, center.x, center.y + 4);
+      }
+    });
+    farm.pumps.forEach((pump) => {
+      const point = project(pump.coordinates);
+      ctx.beginPath(); ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = "#2e6d75"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    });
+  }, [farm, selectedZone]);
+
+  function click(event: React.MouseEvent<HTMLCanvasElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left, y = event.clientY - rect.top;
+    const hit = [...shapesRef.current].reverse().find(({ points }) => {
+      let inside = false;
+      for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+        if (((points[i].y > y) !== (points[j].y > y)) && (x < (points[j].x - points[i].x) * (y - points[i].y) / (points[j].y - points[i].y) + points[i].x)) inside = !inside;
+      }
+      return inside;
+    });
+    if (hit) onSelect(hit.zone);
+  }
+
+  return <canvas ref={canvasRef} className="farm-canvas" onClick={click} aria-label={`${farm.name} irrigation zone map`} />;
+}
+
+export default function Home() {
+  const [farms, setFarms] = useState<Farm[]>([]);
+  const [farmCode, setFarmCode] = useState("F70");
+  const [selectedZone, setSelectedZone] = useState("F70-FRONT-01");
+  const [groups, setGroups] = useState<Group[]>(FALLBACK_GROUPS);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [view, setView] = useState<"overview" | "inventory" | "work" | "orders">("overview");
+  const [modal, setModal] = useState<"inventory" | "activity" | "status" | null>(null);
+  const [search, setSearch] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<number>(1);
+
+  const loadInventory = async () => {
+    try {
+      const response = await fetch("/api/inventory");
+      if (!response.ok) throw new Error();
+      const data = await response.json();
+      setGroups(data.groups);
+      setActivities(data.activities);
+    } catch {
+      setNotice("Prototype data is active; hosted records will sync when the database is available.");
+    }
+  };
+
+  useEffect(() => {
+    fetch("/farm-map.json").then((r) => r.json()).then((data) => setFarms(data.farms));
+    loadInventory();
+  }, []);
+
+  const farm = farms.find((item) => item.code === farmCode) || farms[0];
+  const zone = farm?.zones.find((item) => item.id === selectedZone) || farm?.zones[0];
+  const filteredGroups = groups.filter((group) =>
+    (view === "overview" ? group.zoneId === zone?.id : true) &&
+    `${group.zoneId} ${group.species} ${group.client} ${group.orderNumber}`.toLowerCase().includes(search.toLowerCase())
+  );
+  const totalTrees = groups.reduce((sum, group) => sum + group.quantity, 0);
+  const available = groups.filter((g) => g.status === "Available").reduce((sum, group) => sum + group.quantity, 0);
+  const allocated = totalTrees - available;
+  const farmTotal = groups.filter((g) => g.zoneId.startsWith(farmCode)).reduce((sum, group) => sum + group.quantity, 0);
+  const pumps = useMemo(() => [...new Set(farm?.zones.map((z) => z.pump) || [])], [farm]);
+
+  function changeFarm(code: string) {
+    setFarmCode(code);
+    const next = farms.find((item) => item.code === code);
+    if (next?.zones[0]) setSelectedZone(next.zones[0].id);
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    const form = new FormData(event.currentTarget);
+    const payload: Record<string, unknown> = Object.fromEntries(form.entries());
+    if (modal === "inventory") payload.quantity = Number(payload.quantity);
+    if (modal === "activity" || modal === "status") payload.groupId = Number(payload.groupId);
+    try {
+      const response = await fetch("/api/inventory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+      if (!response.ok) throw new Error((await response.json()).error);
+      await loadInventory();
+      setNotice(modal === "inventory" ? "Tree group added to inventory." : modal === "activity" ? "Milestone recorded." : "Client and order status updated.");
+      setModal(null);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to save the change.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main>
+      <header className="topbar">
+        <div className="brand-mark">JT</div>
+        <div><p className="eyebrow">JD Thornton Nurseries</p><h1>Field Ledger</h1></div>
+        <nav aria-label="Primary navigation">
+          {([["overview", "Farm map"], ["inventory", "Inventory"], ["work", "Work log"], ["orders", "Clients & orders"]] as const).map(([id, label]) =>
+            <button key={id} className={view === id ? "active" : ""} onClick={() => setView(id)}>{label}</button>
+          )}
+        </nav>
+        <div className="header-actions"><button className="icon-button" aria-label="Notifications">3</button><div className="avatar">JD</div></div>
+      </header>
+
+      <section className="workspace">
+        <aside className="sidebar">
+          <div className="side-heading"><span>Farms</span><span className="muted">{farms.length || 4} locations</span></div>
+          <div className="farm-list">
+            {farms.length ? farms.map((item) => (
+              <button key={item.code} className={farmCode === item.code ? "farm-button selected" : "farm-button"} onClick={() => changeFarm(item.code)}>
+                <span className="farm-icon">{item.name.split(" ")[0]}</span>
+                <span><strong>{item.name}</strong><small>{item.zones.length} zones · {item.pumps.length} pumps</small></span>
+              </button>
+            )) : <Skeleton count={4} height={54} />}
+          </div>
+          <div className="side-heading pump-heading"><span>Irrigation</span></div>
+          {pumps.map((pump) => <div className="pump-row" key={pump}><span className="pump-dot" /><span>{pump} Pump</span><b>{farm?.zones.filter((z) => z.pump === pump).length}</b></div>)}
+          <div className="sync-card"><span className="sync-icon">↻</span><div><strong>Map source linked</strong><small>Farm geometry imported from KML</small></div></div>
+        </aside>
+
+        <div className="content">
+          <div className="title-row">
+            <div><p className="breadcrumb">FARMS / {farm?.name.toUpperCase() || "LOADING"}</p><h2>{view === "overview" ? farm?.name : view === "inventory" ? "Tree Inventory" : view === "work" ? "Work & Milestones" : "Clients & Orders"}</h2><p>{view === "overview" ? "Irrigation map and live inventory by growing zone" : view === "inventory" ? "Grouped by species, height, and caliper" : view === "work" ? "Planting, pruning, fertilization, treatments, and maintenance" : "Reserved, sold, pickup, and delivery commitments"}</p></div>
+            <div className="title-actions"><button className="secondary" onClick={() => setModal("activity")}>Record work</button><button className="primary" onClick={() => setModal("inventory")}>+ Add trees</button></div>
+          </div>
+
+          <div className="metrics">
+            <article><span>Total trees</span><strong>{totalTrees.toLocaleString()}</strong><small>Across {groups.length} inventory groups</small></article>
+            <article><span>Available</span><strong>{available.toLocaleString()}</strong><small>{totalTrees ? Math.round(available / totalTrees * 100) : 0}% ready for allocation</small></article>
+            <article><span>Committed</span><strong>{allocated.toLocaleString()}</strong><small>Tagged or sold for clients</small></article>
+            <article><span>{farm?.name || "Current farm"}</span><strong>{farmTotal.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped irrigation zones</small></article>
+          </div>
+
+          {view === "overview" && farm && zone && (
+            <div className="overview-grid">
+              <section className="map-card">
+                <div className="card-head"><div><span className="live-dot" />LIVE FARM MAP</div><div className="legend"><span><i className="legend-zone" />Irrigation zone</span><span><i className="legend-pump" />Pump</span></div></div>
+                <FarmCanvas farm={farm} selectedZone={zone.id} onSelect={(next) => setSelectedZone(next.id)} />
+                <div className="map-footer"><span>Click a zone to inspect its trees</span><strong>{zone.id}</strong></div>
+              </section>
+              <section className="zone-panel">
+                <div className="zone-label">SELECTED ZONE</div>
+                <h3>{zone.name}</h3>
+                <p>{zone.pump} Pump · {zone.id}</p>
+                <div className="zone-total"><span>Current inventory</span><strong>{filteredGroups.reduce((s, g) => s + g.quantity, 0)}</strong><small>trees in {filteredGroups.length} groups</small></div>
+                <div className="zone-list">
+                  {filteredGroups.length ? filteredGroups.map((group) => (
+                    <button key={group.id} onClick={() => { setActiveGroup(group.id); setModal("status"); }}>
+                      <span className={`status-dot ${group.status.toLowerCase()}`} /><span><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></span><b>{group.quantity}</b>
+                    </button>
+                  )) : <div className="empty">No inventory recorded in this zone yet.</div>}
+                </div>
+                <button className="panel-action" onClick={() => setModal("inventory")}>Add inventory to {zone.name}</button>
+              </section>
+            </div>
+          )}
+
+          {view !== "overview" && (
+            <section className="data-card">
+              <div className="table-tools">
+                <div className="search"><span>⌕</span><input aria-label="Search records" placeholder="Search tree ID, species, client, or order…" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
+                <div className="status-key"><span className="available">● Available</span><span className="tagged">● Tagged</span><span className="sold">● Sold</span></div>
+              </div>
+              {view === "work" ? (
+                <div className="activity-list">
+                  {activities.length ? activities.map((activity) => {
+                    const group = groups.find((g) => g.id === activity.groupId);
+                    return <article key={activity.id}><div className="date-block"><b>{new Date(`${activity.activityDate}T12:00:00`).toLocaleDateString("en-US", { month: "short" })}</b><strong>{activity.activityDate.slice(-2)}</strong></div><div><span className="activity-type">{activity.activityType}</span><h3>{group?.species || "Tree group"} · {activity.zoneId}</h3><p>{activity.details || "Field work completed."}</p><small>Recorded by {activity.performedBy || "Farm team"}</small></div></article>;
+                  }) : <div className="empty-state"><strong>No field work recorded yet</strong><span>Use “Record work” to add a milestone for any inventory group.</span></div>}
+                </div>
+              ) : (
+                <div className="table-wrap"><table><thead><tr><th>Tree ID</th><th>Species / size</th><th>Qty</th><th>Status</th><th>{view === "orders" ? "Client / order" : "Planted"}</th><th /></tr></thead><tbody>
+                  {filteredGroups.map((group) => <tr key={group.id}><td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{group.zoneId}</small></td><td><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td><td className="qty">{group.quantity}</td><td><span className={`badge ${group.status.toLowerCase()}`}>{group.status}</span></td><td>{view === "orders" ? <><strong>{group.client || "—"}</strong><small>{group.orderNumber || "No order assigned"}</small></> : new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString()}</td><td><button className="more" aria-label={`Edit ${group.species}`} onClick={() => { setActiveGroup(group.id); setModal("status"); }}>•••</button></td></tr>)}
+                </tbody></table></div>
+              )}
+            </section>
+          )}
+          {notice && <div className="toast" role="status"><span>{notice}</span><button onClick={() => setNotice("")}>×</button></div>}
+        </div>
+      </section>
+
+      {modal && <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.currentTarget === e.target) setModal(null); }}><div className="modal" role="dialog" aria-modal="true">
+        <div className="modal-head"><div><span>{modal === "inventory" ? "NEW INVENTORY GROUP" : modal === "activity" ? "FIELD ACTIVITY" : "CLIENT & ORDER"}</span><h3>{modal === "inventory" ? "Add trees to a zone" : modal === "activity" ? "Record a milestone" : "Update availability"}</h3></div><button onClick={() => setModal(null)} aria-label="Close">×</button></div>
+        <form onSubmit={submit}>
+          {modal === "inventory" && <>
+            <input type="hidden" name="action" value="add-group" />
+            <label className="full">Farm / Pump / Zone<select name="zoneId" defaultValue={zone?.id}>{farms.flatMap((f) => f.zones).map((z) => <option key={z.id} value={z.id}>{z.id} · {z.name}</option>)}</select></label>
+            <label className="full">Species<input name="species" required placeholder="e.g. Live Oak" /></label>
+            <label>Height<input name="height" required placeholder="12–14 ft" /></label><label>Caliper<input name="caliper" required placeholder="3.5 in" /></label>
+            <label>Quantity<input name="quantity" type="number" min="1" required placeholder="50" /></label><label>Planting date<input name="plantedOn" type="date" required /></label>
+            <input type="hidden" name="status" value="Available" />
+          </>}
+          {modal === "activity" && <>
+            <input type="hidden" name="action" value="add-activity" />
+            <label className="full">Tree group<select name="groupId" defaultValue={activeGroup} onChange={(e) => setActiveGroup(Number(e.target.value))}>{groups.map((g) => <option key={g.id} value={g.id}>{g.zoneId}-{String(g.id).padStart(3, "0")} · {g.species}</option>)}</select></label>
+            <input type="hidden" name="zoneId" value={groups.find((g) => g.id === activeGroup)?.zoneId || zone?.id} />
+            <label>Activity<select name="activityType"><option>Root pruning</option><option>Fertilization</option><option>Treatment</option><option>Maintenance</option><option>Planting</option></select></label>
+            <label>Date<input name="activityDate" type="date" required /></label>
+            <label className="full">Work details<textarea name="details" placeholder="Materials, rate, observations, next steps…" /></label>
+            <label className="full">Performed by<input name="performedBy" placeholder="Crew or team member" /></label>
+          </>}
+          {modal === "status" && <>
+            <input type="hidden" name="action" value="update-status" /><input type="hidden" name="groupId" value={activeGroup} />
+            <div className="selected-record full"><span>{groups.find((g) => g.id === activeGroup)?.zoneId}-{String(activeGroup).padStart(3, "0")}</span><strong>{groups.find((g) => g.id === activeGroup)?.species}</strong></div>
+            <label className="full">Availability status<select name="status" defaultValue={groups.find((g) => g.id === activeGroup)?.status}><option>Available</option><option>Tagged</option><option>Sold</option></select></label>
+            <label className="full">Client<input name="client" defaultValue={groups.find((g) => g.id === activeGroup)?.client} placeholder="Client or project name" /></label>
+            <label className="full">Sales order<input name="orderNumber" defaultValue={groups.find((g) => g.id === activeGroup)?.orderNumber} placeholder="SO-0000" /></label>
+          </>}
+          <div className="form-actions full"><button type="button" className="secondary" onClick={() => setModal(null)}>Cancel</button><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save record"}</button></div>
+        </form>
+      </div></div>}
+    </main>
+  );
+}
