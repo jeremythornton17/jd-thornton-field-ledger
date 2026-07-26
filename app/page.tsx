@@ -658,7 +658,7 @@ export default function Home() {
                     <td><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td>
                     <td className="qty">{group.quantity}</td>
                     <td><div className="inventory-split"><span className="available">A {group.availableQuantity}</span><span className="tagged">T {group.taggedQuantity}</span><span className="sold">S {group.soldQuantity}</span></div></td>
-                    <td>{new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString()}</td>
+                    <td>{/^\d{4}-\d{2}-\d{2}$/.test(group.plantedOn) ? new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString() : "Not recorded"}</td>
                     <td><button className="more" aria-label={`Allocate ${group.species}`} onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>•••</button></td>
                   </tr>)}
                 </tbody></table></div>
