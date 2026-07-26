@@ -96,6 +96,18 @@ def code(value):
     return "".join(ch for ch in value.upper() if ch.isalnum())
 
 
+def find_duplicate_zone_ids(farms):
+    seen = set()
+    duplicates = set()
+    for farm in farms:
+        for zone in farm["zones"]:
+            if zone["id"] in seen:
+                duplicates.add(zone["id"])
+            else:
+                seen.add(zone["id"])
+    return sorted(duplicates)
+
+
 def main():
     source = Path(sys.argv[1])
     target = Path(sys.argv[2])
@@ -204,6 +216,19 @@ def main():
             feature for feature in farm["infrastructure"] if feature_near_zones(feature, farm["zones"])
         ]
         farms.append(farm)
+
+    duplicate_ids = find_duplicate_zone_ids(farms)
+    if duplicate_ids:
+        # The app looks zones up by id (`farm.zones.find(z => z.id === selectedZone)`),
+        # so two zones sharing an id means one of them becomes permanently
+        # unselectable even though it still renders on the map. This is almost
+        # always caused by two placemarks under the same pump sharing a zone
+        # number in the source KML.
+        print(
+            f"WARNING: {len(duplicate_ids)} zone id(s) are duplicated across the source "
+            f"KML and will be unselectable in the app: {', '.join(duplicate_ids)}",
+            file=sys.stderr,
+        )
 
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps({"farms": farms}, separators=(",", ":")), encoding="utf-8")

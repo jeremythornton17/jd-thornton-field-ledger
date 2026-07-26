@@ -207,8 +207,17 @@ def main():
     )
     roads = unique_placemarks(road_folder.findall("k:Placemark", NS)) if road_folder is not None else []
 
+    expected_farms = ("70 Acre Farm", "40 Acre Farm", "25 Acre Farm", "10 Acre Farm")
+    missing_farms = [farm_name for farm_name in expected_farms if farm_name not in farm_nodes]
+    if missing_farms:
+        found_description = ", ".join(sorted(farm_nodes)) or "(none ending in 'Acre Farm')"
+        raise SystemExit(
+            f"Missing expected farm folder(s) in {source}: {', '.join(missing_farms)}. "
+            f"Found folders: {found_description}."
+        )
+
     zone_total = pump_total = road_total = operation_total = infrastructure_total = 0
-    for farm_name in ("70 Acre Farm", "40 Acre Farm", "25 Acre Farm", "10 Acre Farm"):
+    for farm_name in expected_farms:
         source_farm = farm_nodes[farm_name]
         farm_output = folder(
             document,
