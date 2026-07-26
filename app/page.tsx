@@ -57,7 +57,12 @@ type MapLayers = { roads: boolean; operations: boolean; irrigation: boolean };
 
 function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; selectedZone: string; layers: MapLayers; onSelect: (zone: Zone) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const shapesRef = useRef<{ zone: Zone; points: { x: number; y: number }[] }[]>([]);
+  const shapesRef = useRef<{ zone: Zone; points: { x: number; y: number }[]; center: { x: number; y: number } }[]>([]);
+  const [zoom, setZoom] = useState(farm.code === "F70" ? 1.15 : 1);
+
+  useEffect(() => {
+    setZoom(farm.code === "F70" ? 1.15 : 1);
+  }, [farm.code]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -74,7 +79,7 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
     const xs = all.map((p) => p[0]);
     const ys = all.map((p) => p[1]);
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-    const pad = 28;
+    const pad = 64;
     const averageLatitude = ys.reduce((sum, value) => sum + value, 0) / ys.length;
     const longitudeCorrection = Math.cos(averageLatitude * Math.PI / 180);
     const geographicWidth = (maxX - minX) * longitudeCorrection;
@@ -84,10 +89,14 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
     const drawnHeight = geographicHeight * scale;
     const offsetX = (width - drawnWidth) / 2;
     const offsetY = (height - drawnHeight) / 2;
-    const project = ([x, y]: [number, number]) => ({
-      x: offsetX + (x - minX) * longitudeCorrection * scale,
-      y: offsetY + drawnHeight - (y - minY) * scale,
-    });
+    const project = ([x, y]: [number, number]) => {
+      const baseX = offsetX + (x - minX) * longitudeCorrection * scale;
+      const baseY = offsetY + drawnHeight - (y - minY) * scale;
+      return {
+        x: width / 2 + (baseX - width / 2) * zoom,
+        y: height / 2 + (baseY - height / 2) * zoom,
+      };
+    };
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = "#ebe7dc";
     ctx.fillRect(0, 0, width, height);
@@ -127,7 +136,24 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       });
     }
 
-    shapesRef.current = farm.zones.map((zone) => ({ zone, points: zone.coordinates.map(project) }));
+    shapesRef.current = farm.zones.map((zone) => {
+      const geographicPoints = zone.coordinates.map(project);
+      const zoneXs = geographicPoints.map((point) => point.x);
+      const zoneYs = geographicPoints.map((point) => point.y);
+      const center = {
+        x: (Math.min(...zoneXs) + Math.max(...zoneXs)) / 2,
+        y: (Math.min(...zoneYs) + Math.max(...zoneYs)) / 2,
+      };
+      const halfWidth = Math.max(12, (Math.max(...zoneXs) - Math.min(...zoneXs)) / 2 - 3);
+      const halfHeight = Math.max(12, (Math.max(...zoneYs) - Math.min(...zoneYs)) / 2 - 3);
+      const points = [
+        { x: center.x - halfWidth, y: center.y - halfHeight },
+        { x: center.x + halfWidth, y: center.y - halfHeight },
+        { x: center.x + halfWidth, y: center.y + halfHeight },
+        { x: center.x - halfWidth, y: center.y + halfHeight },
+      ];
+      return { zone, points, center };
+    });
     shapesRef.current.forEach(({ zone, points }) => {
       ctx.beginPath();
       points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
@@ -180,8 +206,8 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       });
     }
 
-    shapesRef.current.forEach(({ zone, points }) => {
-      const center = points.reduce((a, p) => ({ x: a.x + p.x / points.length, y: a.y + p.y / points.length }), { x: 0, y: 0 });
+    const zoneLabelBoxes: { left: number; top: number; right: number; bottom: number }[] = [];
+    shapesRef.current.forEach(({ zone, center }) => {
       const selected = zone.id === selectedZone;
       const number = zone.name.match(/\d+/)?.[0];
       const shortLabel = number
@@ -195,7 +221,20 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       ctx.strokeText(shortLabel, center.x, center.y);
       ctx.fillStyle = selected ? "#fffdf8" : "#304438";
       ctx.fillText(shortLabel, center.x, center.y);
+      const labelWidth = ctx.measureText(shortLabel).width + 6;
+      zoneLabelBoxes.push({
+        left: center.x - labelWidth / 2,
+        top: center.y - 7,
+        right: center.x + labelWidth / 2,
+        bottom: center.y + 7,
+      });
     });
+
+    const pumpLabelBoxes: { left: number; top: number; right: number; bottom: number }[] = [];
+    const overlaps = (
+      box: { left: number; top: number; right: number; bottom: number },
+      other: { left: number; top: number; right: number; bottom: number },
+    ) => box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top;
 
     farm.pumps.forEach((pump, index) => {
       const point = project(pump.coordinates);
@@ -204,18 +243,45 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       const label = pump.name
         .replace(/\s+Station$/i, "")
         .replace(/\bDischarg\b/i, "Discharge");
-      const labelY = point.y + (index % 2 ? 18 : -18) + Math.floor(index / 2) * 10;
       ctx.font = "700 8px Arial";
-      ctx.textAlign = point.x > width - 125 ? "right" : "left";
       ctx.textBaseline = "middle";
-      const labelX = point.x + (ctx.textAlign === "right" ? -9 : 9);
       const labelWidth = ctx.measureText(label).width + 8;
+      const candidates = [
+        { left: point.x + 12, top: point.y - 28 },
+        { left: point.x - labelWidth - 12, top: point.y - 28 },
+        { left: point.x + 12, top: point.y + 10 },
+        { left: point.x - labelWidth - 12, top: point.y + 10 },
+        { left: point.x - labelWidth / 2, top: point.y - 42 },
+        { left: point.x - labelWidth / 2, top: point.y + 24 },
+      ];
+      const fallback = { left: 12, top: 12 + index * 21 };
+      const choice = candidates.find((candidate) => {
+        const box = { ...candidate, right: candidate.left + labelWidth, bottom: candidate.top + 18 };
+        return box.left >= 6 && box.right <= width - 6 && box.top >= 6 && box.bottom <= height - 6
+          && !zoneLabelBoxes.some((zoneBox) => overlaps(box, zoneBox))
+          && !pumpLabelBoxes.some((pumpBox) => overlaps(box, pumpBox));
+      }) || fallback;
+      const labelBox = { ...choice, right: choice.left + labelWidth, bottom: choice.top + 18 };
+      pumpLabelBoxes.push(labelBox);
+      const labelX = choice.left + 4;
+      const labelY = choice.top + 9;
+      const targetX = Math.max(choice.left, Math.min(point.x, choice.left + labelWidth));
+      const targetY = Math.max(choice.top, Math.min(point.y, choice.top + 18));
+      ctx.beginPath();
+      ctx.moveTo(point.x, point.y);
+      ctx.lineTo(targetX, targetY);
+      ctx.strokeStyle = "rgba(33,77,83,.7)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.textAlign = "left";
       ctx.fillStyle = "rgba(255,253,248,.9)";
-      ctx.fillRect(ctx.textAlign === "right" ? labelX - labelWidth : labelX - 4, labelY - 7, labelWidth, 14);
+      ctx.fillRect(choice.left, choice.top, labelWidth, 18);
+      ctx.strokeStyle = "rgba(33,77,83,.35)";
+      ctx.strokeRect(choice.left, choice.top, labelWidth, 18);
       ctx.fillStyle = "#214d53";
       ctx.fillText(label, labelX, labelY);
     });
-  }, [farm, selectedZone, layers]);
+  }, [farm, selectedZone, layers, zoom]);
 
   function click(event: React.MouseEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -230,7 +296,29 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
     if (hit) onSelect(hit.zone);
   }
 
-  return <canvas ref={canvasRef} className="farm-canvas" onClick={click} aria-label={`${farm.name} irrigation zone map`} />;
+  function changeZoom(next: number) {
+    setZoom(Math.max(.8, Math.min(3, Number(next.toFixed(2)))));
+  }
+
+  return (
+    <div className={`map-viewport ${farm.code === "F70" ? "map-viewport-large" : ""}`}>
+      <canvas
+        ref={canvasRef}
+        className="farm-canvas"
+        onClick={click}
+        onWheel={(event) => {
+          event.preventDefault();
+          changeZoom(zoom + (event.deltaY < 0 ? .15 : -.15));
+        }}
+        aria-label={`${farm.name} schematic irrigation zone map. Zoom ${Math.round(zoom * 100)} percent.`}
+      />
+      <div className="zoom-controls" aria-label="Map zoom controls">
+        <button type="button" onClick={() => changeZoom(zoom - .2)} aria-label="Zoom out">−</button>
+        <button type="button" className="zoom-level" onClick={() => changeZoom(farm.code === "F70" ? 1.15 : 1)} aria-label="Reset map zoom">{Math.round(zoom * 100)}%</button>
+        <button type="button" onClick={() => changeZoom(zoom + .2)} aria-label="Zoom in">+</button>
+      </div>
+    </div>
+  );
 }
 
 export default function Home() {
