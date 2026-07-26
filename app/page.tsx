@@ -16,6 +16,7 @@ type MapFeature = { name: string; type: "polygon" | "line" | "point"; coordinate
 type Farm = {
   name: string;
   code: string;
+  wateringMethod?: "Hand Watered";
   zones: Zone[];
   pumps: { name: string; coordinates: [number, number] }[];
   boundary: [number, number][];
@@ -243,7 +244,7 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       const selected = zone.id === selectedZone;
       const number = zone.name.match(/\d+/)?.[0];
       const shortLabel = number
-        ? `${zone.pump.charAt(0).toUpperCase()}-${number.padStart(2, "0")}`
+        ? `${zone.pump === "Hand Watered" ? "Z" : zone.pump.charAt(0).toUpperCase()}-${number.padStart(2, "0")}`
         : zone.name.replace(`${zone.pump} `, "").slice(0, 8);
       ctx.font = selected ? "700 9px Arial" : "700 7.5px Arial";
       ctx.textAlign = "center";
@@ -342,7 +343,7 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
           event.preventDefault();
           changeZoom(zoom + (event.deltaY < 0 ? .15 : -.15));
         }}
-        aria-label={`${farm.name} schematic irrigation zone map. Zoom ${Math.round(zoom * 100)} percent.`}
+        aria-label={`${farm.name} schematic farm zone map. Zoom ${Math.round(zoom * 100)} percent.`}
       />
       <div className="zoom-controls" aria-label="Map zoom controls">
         <button type="button" onClick={() => changeZoom(zoom - .2)} aria-label="Zoom out">−</button>
@@ -384,7 +385,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetch("/farm-map.json").then((r) => r.json()).then((data) => setFarms(data.farms));
+    Promise.all([
+      fetch("/farm-map.json").then((response) => response.json()),
+      fetch("/hand-watered-farms.json").then((response) => response.json()),
+    ]).then(([irrigated, handWatered]) => setFarms([...irrigated.farms, ...handWatered.farms]));
     fetch("/api/inventory")
       .then((response) => {
         if (!response.ok) throw new Error();
@@ -399,6 +403,7 @@ export default function Home() {
   }, []);
 
   const farm = farms.find((item) => item.code === farmCode) || farms[0];
+  const isHandWatered = farm?.wateringMethod === "Hand Watered";
   const zone = farm?.zones.find((item) => item.id === selectedZone) || farm?.zones[0];
   const inventoryScopeGroups = groups.filter((group) => inventoryFarmCodes.some((code) => group.zoneId.startsWith(code)));
   const inventoryScopeTotal = inventoryScopeGroups.reduce((sum, group) => sum + group.quantity, 0);
@@ -523,18 +528,18 @@ export default function Home() {
             {farms.length ? farms.map((item) => (
               <button key={item.code} className={farmCode === item.code ? "farm-button selected" : "farm-button"} onClick={() => changeFarm(item.code)}>
                 <span className="farm-icon">{item.name.split(" ")[0]}</span>
-                <span><strong>{item.name}</strong><small>{item.zones.length} zones · {item.pumps.length} pumps</small></span>
+                <span><strong>{item.name}</strong><small>{item.zones.length} zones · {item.wateringMethod || `${item.pumps.length} pumps`}</small></span>
               </button>
             )) : <Skeleton count={4} height={54} />}
           </div>
-          <div className="side-heading pump-heading"><span>Irrigation</span></div>
-          {pumps.map((pump) => <div className="pump-row" key={pump}><span className="pump-dot" /><span>{pump} Pump</span><b>{farm?.zones.filter((z) => z.pump === pump).length}</b></div>)}
-          <div className="sync-card"><span className="sync-icon">↻</span><div><strong>Detailed map linked</strong><small>{farm ? `${farm.roads.length} roads · ${farm.features.length} sites · ${farm.infrastructure.length} irrigation features` : "Loading farm layers"}</small></div></div>
+          <div className="side-heading pump-heading"><span>{isHandWatered ? "Watering" : "Irrigation"}</span></div>
+          {pumps.map((pump) => <div className="pump-row" key={pump}><span className="pump-dot" /><span>{pump}{pump === "Hand Watered" ? "" : " Pump"}</span><b>{farm?.zones.filter((z) => z.pump === pump).length}</b></div>)}
+          <div className="sync-card"><span className="sync-icon">↻</span><div><strong>Detailed map linked</strong><small>{farm ? isHandWatered ? `${farm.zones.length} hand-watered zones` : `${farm.roads.length} roads · ${farm.features.length} sites · ${farm.infrastructure.length} irrigation features` : "Loading farm layers"}</small></div></div>
         </aside>
 
         <div className="content">
           <div className="title-row">
-            <div><p className="breadcrumb">FARMS / {farm?.name.toUpperCase() || "LOADING"}</p><h2>{view === "overview" ? farm?.name : view === "inventory" ? "Tree Inventory" : view === "work" ? "Work & Milestones" : "Clients & Orders"}</h2><p>{view === "overview" ? "Irrigation map and live inventory by growing zone" : view === "inventory" ? "Grouped by species, height, and caliper" : view === "work" ? "Planting, pruning, fertilization, treatments, and maintenance" : "Reserved, sold, pickup, and delivery commitments"}</p></div>
+            <div><p className="breadcrumb">FARMS / {farm?.name.toUpperCase() || "LOADING"}</p><h2>{view === "overview" ? farm?.name : view === "inventory" ? "Tree Inventory" : view === "work" ? "Work & Milestones" : "Clients & Orders"}</h2><p>{view === "overview" ? isHandWatered ? "Hand-watered growing zones and live inventory" : "Irrigation map and live inventory by growing zone" : view === "inventory" ? "Grouped by species, height, and caliper" : view === "work" ? "Planting, pruning, fertilization, treatments, and maintenance" : "Reserved, sold, pickup, and delivery commitments"}</p></div>
             <div className="title-actions"><button className="secondary" onClick={() => setModal("activity")}>Record work</button><button className="primary" onClick={() => setModal("inventory")}>+ Add trees</button></div>
           </div>
 
@@ -543,7 +548,7 @@ export default function Home() {
             <article><span>Available</span><strong>{available.toLocaleString()}</strong><small>{totalTrees ? Math.round(available / totalTrees * 100) : 0}% ready for allocation</small></article>
             <article><span>Tagged</span><strong>{tagged.toLocaleString()}</strong><small>Marked for clients</small></article>
             <article><span>Sold</span><strong>{sold.toLocaleString()}</strong><small>Awaiting customer receipt</small></article>
-            <article><span>{farm?.name || "Current farm"}</span><strong>{totalTrees.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped irrigation zones</small></article>
+            <article><span>{farm?.name || "Current farm"}</span><strong>{totalTrees.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped {isHandWatered ? "hand-watered" : "irrigation"} zones</small></article>
           </div>
           <details className="species-breakdown" open>
             <summary><span>Inventory by species &amp; size</span><small>{view === "inventory" ? inventoryScopeLabel : farm?.name || "Current farm"} · {speciesBreakdown.length} species / size groups</small></summary>
@@ -563,22 +568,22 @@ export default function Home() {
           {view === "overview" && farm && zone && (
             <div className="overview-grid">
               <section className="map-card">
-                <div className="card-head"><div><span className="live-dot" />LIVE FARM MAP</div><div className="legend"><span><i className="legend-zone" />Zone</span><span><i className="legend-pump" />Pump</span><span><i className="legend-road" />Road</span><span><i className="legend-line" />Irrigation</span></div></div>
-                <div className="layer-controls" aria-label="Map layers">
+                <div className="card-head"><div><span className="live-dot" />LIVE FARM MAP</div><div className="legend"><span><i className="legend-zone" />Zone</span>{!isHandWatered && <><span><i className="legend-pump" />Pump</span><span><i className="legend-road" />Road</span><span><i className="legend-line" />Irrigation</span></>}</div></div>
+                {!isHandWatered && <div className="layer-controls" aria-label="Map layers">
                   {([["roads", "Roads"], ["operations", "Operations"], ["irrigation", "Irrigation detail"]] as const).map(([key, label]) =>
                     <button key={key} className={layers[key] ? "enabled" : ""} onClick={() => setLayers((current) => ({ ...current, [key]: !current[key] }))}><span />{label}</button>
                   )}
-                </div>
+                </div>}
                 <FarmCanvas key={farm.code} farm={farm} selectedZone={zone.id} layers={layers} onSelect={(next) => setSelectedZone(next.id)} />
                 <div className="map-footer"><span>Click a zone to inspect its trees</span><strong>{zone.id}</strong></div>
               </section>
               <section className="zone-panel">
                 <div className="zone-label">SELECTED ZONE</div>
                 <h3>{zone.name}</h3>
-                <p>{zone.pump} Pump · {zone.id}</p>
+                <p>{zone.pump}{zone.pump === "Hand Watered" ? "" : " Pump"} · {zone.id}</p>
                 <label className="zone-jump">Jump to any mapped zone
                   <select value={zone.id} onChange={(event) => setSelectedZone(event.target.value)}>
-                    {pumps.map((pump) => <optgroup key={pump} label={`${pump} Pump`}>
+                    {pumps.map((pump) => <optgroup key={pump} label={pump === "Hand Watered" ? pump : `${pump} Pump`}>
                       {farm.zones.filter((item) => item.pump === pump).sort((a, b) => a.zoneNumber - b.zoneNumber).map((item) =>
                         <option key={item.id} value={item.id}>{item.name} · {item.id}</option>
                       )}
@@ -669,7 +674,7 @@ export default function Home() {
         <form onSubmit={submit}>
           {modal === "inventory" && <>
             <input type="hidden" name="action" value="add-group" />
-            <label className="full">Farm / Pump / Zone<select name="zoneId" defaultValue={zone?.id}>{farms.flatMap((f) => f.zones).map((z) => <option key={z.id} value={z.id}>{z.id} · {z.name}</option>)}</select></label>
+            <label className="full">Farm / Watering / Zone<select name="zoneId" defaultValue={zone?.id}>{farms.flatMap((f) => f.zones).map((z) => <option key={z.id} value={z.id}>{z.id} · {z.name}</option>)}</select></label>
             <label className="full">Species<input name="species" required placeholder="e.g. Live Oak" /></label>
             <label>Height<input name="height" required placeholder="12–14 ft" /></label><label>Caliper<input name="caliper" required placeholder="3.5 in" /></label>
             <label>Quantity<input name="quantity" type="number" min="1" required placeholder="50" /></label><label>Planting date<input name="plantedOn" type="date" required /></label>

@@ -1,0 +1,64 @@
+{
+  "farms": [
+    {
+      "name": "Janets",
+      "code": "FJAN",
+      "wateringMethod": "Hand Watered",
+      "zones": [
+        {
+          "name": "Zone 01",
+          "pump": "Hand Watered",
+          "pumpCode": "HAND",
+          "zoneNumber": 1,
+          "id": "FJAN-HAND-01",
+          "coordinates": [
+            [-81.006, 26.7818],
+            [-81.0053, 26.7818],
+            [-81.0053, 26.7826],
+            [-81.006, 26.7826],
+            [-81.006, 26.7818]
+          ]
+        },
+        {
+          "name": "Zone 02",
+          "pump": "Hand Watered",
+          "pumpCode": "HAND",
+          "zoneNumber": 2,
+          "id": "FJAN-HAND-02",
+          "coordinates": [
+            [-81.0052, 26.7818],
+            [-81.0045, 26.7818],
+            [-81.0045, 26.7826],
+            [-81.0052, 26.7826],
+            [-81.0052, 26.7818]
+          ]
+        },
+        {
+          "name": "Zone 03",
+          "pump": "Hand Watered",
+          "pumpCode": "HAND",
+          "zoneNumber": 3,
+          "id": "FJAN-HAND-03",
+          "coordinates": [
+            [-81.0044, 26.7818],
+            [-81.0037, 26.7818],
+            [-81.0037, 26.7826],
+            [-81.0044, 26.7826],
+            [-81.0044, 26.7818]
+          ]
+        }
+      ],
+      "pumps": [],
+      "boundary": [
+        [-81.0061, 26.7817],
+        [-81.0036, 26.7817],
+        [-81.0036, 26.7827],
+        [-81.0061, 26.7827],
+        [-81.0061, 26.7817]
+      ],
+      "roads": [],
+      "features": [],
+      "infrastructure": []
+    }
+  ]
+}
