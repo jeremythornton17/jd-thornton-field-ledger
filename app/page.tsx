@@ -133,13 +133,6 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       ctx.lineWidth = selected ? 2.5 : 1;
       ctx.fill();
       ctx.stroke();
-      if (selected) {
-        const center = points.reduce((a, p) => ({ x: a.x + p.x / points.length, y: a.y + p.y / points.length }), { x: 0, y: 0 });
-        ctx.fillStyle = "#fff9ef";
-        ctx.font = "700 11px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(zone.id, center.x, center.y + 4);
-      }
     });
 
     if (layers.irrigation) {
@@ -175,6 +168,23 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
         ctx.setLineDash([]);
       });
     }
+
+    shapesRef.current.forEach(({ zone, points }) => {
+      const center = points.reduce((a, p) => ({ x: a.x + p.x / points.length, y: a.y + p.y / points.length }), { x: 0, y: 0 });
+      const selected = zone.id === selectedZone;
+      const shortLabel = zone.name
+        .replace(`${zone.pump} `, "")
+        .replace("Loading Zone", "Loading")
+        .replace("Property Line", "Property");
+      ctx.font = selected ? "700 9px Arial" : "700 7px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = selected ? 3 : 2;
+      ctx.strokeStyle = selected ? "rgba(74,35,20,.85)" : "rgba(255,253,248,.92)";
+      ctx.strokeText(shortLabel, center.x, center.y);
+      ctx.fillStyle = selected ? "#fffdf8" : "#304438";
+      ctx.fillText(shortLabel, center.x, center.y);
+    });
 
     farm.pumps.forEach((pump) => {
       const point = project(pump.coordinates);
@@ -326,6 +336,15 @@ export default function Home() {
                 <div className="zone-label">SELECTED ZONE</div>
                 <h3>{zone.name}</h3>
                 <p>{zone.pump} Pump · {zone.id}</p>
+                <label className="zone-jump">Jump to any mapped zone
+                  <select value={zone.id} onChange={(event) => setSelectedZone(event.target.value)}>
+                    {pumps.map((pump) => <optgroup key={pump} label={`${pump} Pump`}>
+                      {farm.zones.filter((item) => item.pump === pump).sort((a, b) => a.zoneNumber - b.zoneNumber).map((item) =>
+                        <option key={item.id} value={item.id}>{item.name} · {item.id}</option>
+                      )}
+                    </optgroup>)}
+                  </select>
+                </label>
                 <div className="zone-total"><span>Current inventory</span><strong>{filteredGroups.reduce((s, g) => s + g.quantity, 0)}</strong><small>trees in {filteredGroups.length} groups</small></div>
                 <div className="zone-list">
                   {filteredGroups.length ? filteredGroups.map((group) => (

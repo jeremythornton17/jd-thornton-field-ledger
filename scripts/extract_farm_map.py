@@ -123,16 +123,18 @@ def main():
                     if name_node is None or polygon is None:
                         continue
                     zone_name = (name_node.text or "").strip()
-                    zone_number = "".join(ch for ch in zone_name if ch.isdigit()) or str(
-                        len(farm["zones"]) + 1
+                    numeric_zone = "".join(ch for ch in zone_name if ch.isdigit())
+                    zone_key = f"{int(numeric_zone):02d}" if numeric_zone else code(
+                        zone_name.replace(pump_name, "").strip()
                     )
+                    sort_number = int(numeric_zone) if numeric_zone else 100 + len(farm["zones"])
                     farm["zones"].append(
                         {
                             "name": zone_name,
                             "pump": pump_name,
                             "pumpCode": pump_code,
-                            "zoneNumber": int(zone_number),
-                            "id": f"{farm_code}-{pump_code}-{int(zone_number):02d}",
+                            "zoneNumber": sort_number,
+                            "id": f"{farm_code}-{pump_code}-{zone_key}",
                             "coordinates": coords(polygon.text),
                         }
                     )
