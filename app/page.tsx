@@ -598,7 +598,7 @@ export default function Home() {
             <article><span>Sold</span><strong>{sold.toLocaleString()}</strong><small>Awaiting customer receipt</small></article>
             <article><span>Inventory value</span><strong>{formatMoney(inventoryValue)}</strong><small>{farm?.name || "Current farm"} · On-property value</small></article>
           </div>
-          <details className="species-breakdown" open>
+          {view === "inventory" && <details className="species-breakdown" open>
             <summary><span>Inventory by species &amp; size</span><small>{view === "inventory" ? inventoryScopeLabel : farm?.name || "Current farm"} · {speciesBreakdown.length} species · {speciesSizeGroupCount} size groups</small></summary>
             <div className="species-columns">
               {speciesBreakdown.map((item) => (
@@ -619,7 +619,7 @@ export default function Home() {
               ))}
               {!speciesBreakdown.length && <div className="species-empty">No inventory in the current farm scope.</div>}
             </div>
-          </details>
+          </details>}
 
           {view === "overview" && farm && zone && (
             <div className="overview-grid">
