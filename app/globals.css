@@ -87,7 +87,7 @@ button { cursor: pointer; }
 .species-column > header { min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; background: var(--forest); color: #fff; }
 .species-column > header strong { font: 600 16px Georgia, serif; }
 .species-column > header small { color: #b9cbc0; font-size: 8px; text-transform: uppercase; letter-spacing: .08em; }
-.species-column-head, .species-size-row { display: grid; grid-template-columns: minmax(100px, 1.5fr) repeat(4, minmax(44px, .7fr)); gap: 7px; align-items: center; }
+.species-column-head, .species-size-row { display: grid; grid-template-columns: minmax(100px, 1.3fr) minmax(84px, .9fr) repeat(4, minmax(44px, .6fr)); gap: 7px; align-items: center; }
 .species-column-head { padding: 7px 10px; background: #e8e8df; color: #788078; font-size: 7px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
 .species-column-head span:not(:first-child), .species-size-row > :not(:first-child) { text-align: right; }
 .species-size-row { min-height: 48px; padding: 8px 10px; border-top: 1px solid #e3e3db; font-size: 9px; }
@@ -97,6 +97,7 @@ button { cursor: pointer; }
 .species-size-row div small { margin-top: 2px; color: #929991; font-size: 8px; }
 .species-size-row b { color: var(--forest); font: 600 15px Georgia, serif; }
 .species-size-row > span { font-weight: 800; }
+.species-size-row .size-price { color: #735f4d; font-size: 8px; font-weight: 700; }
 .species-empty { grid-column: 1 / -1; padding: 20px; color: #858c85; text-align: center; font-size: 9px; }
 
 .overview-grid { display: grid; grid-template-columns: minmax(0, 1fr) 285px; gap: 18px; }
@@ -179,6 +180,10 @@ td.qty { font: 600 17px Georgia, serif; color: var(--forest); }
 .badge.available { background: #e1eddd; }.badge.tagged { background: #f5e6c9; }.badge.sold { background: #f1d8d2; }
 .inventory-split { display: flex; gap: 5px; white-space: nowrap; }
 .inventory-split span { padding: 4px 6px; border-radius: 10px; font-size: 8px; font-weight: 800; background: #f0f1eb; }
+.price-cell { white-space: nowrap; }
+.price-cell strong, .price-cell small { display: block; }
+.price-cell strong { color: var(--forest); font-size: 10px; }
+.price-cell small { margin-top: 2px; color: #929991; font-size: 8px; }
 .more { border: 0; background: transparent; color: #78827a; letter-spacing: 2px; }
 .record-actions { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .table-action { border: 1px solid #bdc8bf; background: #f7f8f4; color: var(--forest); border-radius: 3px; padding: 6px 8px; font-size: 8px; font-weight: 800; }

@@ -31,6 +31,7 @@ type Group = {
   height: string;
   caliper: string;
   quantity: number;
+  priceCents: number;
   availableQuantity: number;
   taggedQuantity: number;
   soldQuantity: number;
@@ -44,6 +45,7 @@ type Allocation = {
   height: string;
   caliper: string;
   quantity: number;
+  priceCents: number;
   status: "Tagged" | "Sold";
   client: string;
   orderNumber: string;
@@ -61,16 +63,20 @@ type Activity = {
 };
 
 const FALLBACK_GROUPS: Group[] = [
-  { id: 1, zoneId: "F70-FRONT-01", species: "Live Oak", height: "12–14 ft", caliper: "3.5 in", quantity: 86, availableQuantity: 86, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-02-12" },
-  { id: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, availableQuantity: 0, taggedQuantity: 42, soldQuantity: 0, plantedOn: "2023-11-06" },
-  { id: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, availableQuantity: 0, taggedQuantity: 0, soldQuantity: 28, plantedOn: "2023-08-18" },
-  { id: 4, zoneId: "F40-WEST-05", species: "Gumbo Limbo", height: "8–10 ft", caliper: "2.5 in", quantity: 115, availableQuantity: 115, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2025-01-20" },
-  { id: 5, zoneId: "F25-NORTH-02", species: "Royal Poinciana", height: "10–12 ft", caliper: "3 in", quantity: 64, availableQuantity: 64, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-05-14" },
+  { id: 1, zoneId: "F70-FRONT-01", species: "Live Oak", height: "12–14 ft", caliper: "3.5 in", quantity: 86, priceCents: 0, availableQuantity: 86, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-02-12" },
+  { id: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, priceCents: 0, availableQuantity: 0, taggedQuantity: 42, soldQuantity: 0, plantedOn: "2023-11-06" },
+  { id: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, priceCents: 0, availableQuantity: 0, taggedQuantity: 0, soldQuantity: 28, plantedOn: "2023-08-18" },
+  { id: 4, zoneId: "F40-WEST-05", species: "Gumbo Limbo", height: "8–10 ft", caliper: "2.5 in", quantity: 115, priceCents: 0, availableQuantity: 115, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2025-01-20" },
+  { id: 5, zoneId: "F25-NORTH-02", species: "Royal Poinciana", height: "10–12 ft", caliper: "3 in", quantity: 64, priceCents: 0, availableQuantity: 64, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-05-14" },
 ];
 const FALLBACK_ALLOCATIONS: Allocation[] = [
-  { id: 1, groupId: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, status: "Tagged", client: "Palm Beach Gardens", orderNumber: "SO-2408", markingMethod: "Ribbon tag", createdAt: "" },
-  { id: 2, groupId: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, status: "Sold", client: "Evergreen Landscape", orderNumber: "SO-2391", markingMethod: "Metal tag", createdAt: "" },
+  { id: 1, groupId: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, priceCents: 0, status: "Tagged", client: "Palm Beach Gardens", orderNumber: "SO-2408", markingMethod: "Ribbon tag", createdAt: "" },
+  { id: 2, groupId: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, priceCents: 0, status: "Sold", client: "Evergreen Landscape", orderNumber: "SO-2391", markingMethod: "Metal tag", createdAt: "" },
 ];
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
+}
 
 type MapLayers = { roads: boolean; operations: boolean; irrigation: boolean };
 
@@ -423,6 +429,7 @@ export default function Home() {
   const available = farmGroups.reduce((sum, group) => sum + group.availableQuantity, 0);
   const tagged = farmGroups.reduce((sum, group) => sum + group.taggedQuantity, 0);
   const sold = farmGroups.reduce((sum, group) => sum + group.soldQuantity, 0);
+  const inventoryValue = farmGroups.reduce((sum, group) => sum + group.quantity * group.priceCents, 0);
   const pumps = useMemo(() => [...new Set(farm?.zones.map((z) => z.pump) || [])], [farm]);
   const inventoryScopeLabel = inventoryFarmCodes.length === farms.length
     ? "All farms"
@@ -430,7 +437,7 @@ export default function Home() {
       ? farms.find((item) => item.code === inventoryFarmCodes[0])?.name || "1 farm"
       : `${inventoryFarmCodes.length} farms`;
   const speciesBreakdown = useMemo(() => {
-    type SizeSummary = { height: string; caliper: string; total: number; available: number; tagged: number; sold: number };
+    type SizeSummary = { height: string; caliper: string; minPriceCents: number; maxPriceCents: number; total: number; available: number; tagged: number; sold: number };
     type SpeciesSummary = { species: string; sizes: Map<string, SizeSummary> };
     const summary = new Map<string, SpeciesSummary>();
     const scopeCodes = view === "inventory" ? inventoryFarmCodes : [farmCode];
@@ -438,7 +445,9 @@ export default function Home() {
       const speciesKey = group.species.trim().toLocaleLowerCase();
       const sizeKey = `${group.height.trim().toLocaleLowerCase()}|${group.caliper.trim().toLocaleLowerCase()}`;
       const species = summary.get(speciesKey) || { species: group.species.trim(), sizes: new Map<string, SizeSummary>() };
-      const size = species.sizes.get(sizeKey) || { height: group.height.trim(), caliper: group.caliper.trim(), total: 0, available: 0, tagged: 0, sold: 0 };
+      const size = species.sizes.get(sizeKey) || { height: group.height.trim(), caliper: group.caliper.trim(), minPriceCents: group.priceCents, maxPriceCents: group.priceCents, total: 0, available: 0, tagged: 0, sold: 0 };
+      size.minPriceCents = Math.min(size.minPriceCents, group.priceCents);
+      size.maxPriceCents = Math.max(size.maxPriceCents, group.priceCents);
       size.total += group.quantity;
       size.available += group.availableQuantity;
       size.tagged += group.taggedQuantity;
@@ -476,6 +485,10 @@ export default function Home() {
     const form = new FormData(event.currentTarget);
     const payload: Record<string, unknown> = Object.fromEntries(form.entries());
     if (modal === "inventory" || modal === "edit-group" || modal === "status") payload.quantity = Number(payload.quantity);
+    if (modal === "inventory" || modal === "edit-group") {
+      payload.priceCents = Math.round(Number(payload.price) * 100);
+      delete payload.price;
+    }
     if (modal === "edit-group" || modal === "activity" || modal === "status") payload.groupId = Number(payload.groupId);
     if (modal === "status" && payload.allocationId) payload.allocationId = Number(payload.allocationId);
     try {
@@ -583,7 +596,7 @@ export default function Home() {
             <article><span>Available</span><strong>{available.toLocaleString()}</strong><small>{totalTrees ? Math.round(available / totalTrees * 100) : 0}% ready for allocation</small></article>
             <article><span>Tagged</span><strong>{tagged.toLocaleString()}</strong><small>Marked for clients</small></article>
             <article><span>Sold</span><strong>{sold.toLocaleString()}</strong><small>Awaiting customer receipt</small></article>
-            <article><span>{farm?.name || "Current farm"}</span><strong>{totalTrees.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped {isHandWatered ? "hand-watered" : "irrigation"} zones</small></article>
+            <article><span>Inventory value</span><strong>{formatMoney(inventoryValue)}</strong><small>{farm?.name || "Current farm"} · On-property value</small></article>
           </div>
           <details className="species-breakdown" open>
             <summary><span>Inventory by species &amp; size</span><small>{view === "inventory" ? inventoryScopeLabel : farm?.name || "Current farm"} · {speciesBreakdown.length} species · {speciesSizeGroupCount} size groups</small></summary>
@@ -591,10 +604,11 @@ export default function Home() {
               {speciesBreakdown.map((item) => (
                 <section className="species-column" key={item.species}>
                   <header><strong>{item.species}</strong><small>{item.sizes.length} {item.sizes.length === 1 ? "size" : "sizes"}</small></header>
-                  <div className="species-column-head"><span>Size</span><span>Total</span><span>Available</span><span>Tagged</span><span>Sold</span></div>
+                  <div className="species-column-head"><span>Size</span><span>Price</span><span>Total</span><span>Available</span><span>Tagged</span><span>Sold</span></div>
                   {item.sizes.map((size) => (
                     <div className="species-size-row" key={`${item.species}-${size.height}-${size.caliper}`}>
                       <div><strong>{size.height}</strong><small>{size.caliper}</small></div>
+                      <span className="size-price">{size.minPriceCents === size.maxPriceCents ? formatMoney(size.minPriceCents) : `${formatMoney(size.minPriceCents)}–${formatMoney(size.maxPriceCents)}`}</span>
                       <b>{size.total.toLocaleString()}</b>
                       <span className="available">{size.available.toLocaleString()}</span>
                       <span className="tagged">{size.tagged.toLocaleString()}</span>
@@ -637,7 +651,7 @@ export default function Home() {
                   {filteredGroups.length ? filteredGroups.map((group) => (
                     <button key={group.id} onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>
                       <span className={`status-dot ${group.soldQuantity ? "sold" : group.taggedQuantity ? "tagged" : "available"}`} />
-                      <span><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small><small className="quantity-split">A {group.availableQuantity} · T {group.taggedQuantity} · S {group.soldQuantity}</small></span>
+                      <span><strong>{group.species}</strong><small>{group.height} · {group.caliper} · {formatMoney(group.priceCents)} each</small><small className="quantity-split">A {group.availableQuantity} · T {group.taggedQuantity} · S {group.soldQuantity}</small></span>
                       <b>{group.quantity}</b>
                     </button>
                   )) : <div className="empty">No inventory recorded in this zone yet.</div>}
@@ -681,23 +695,25 @@ export default function Home() {
                   }) : <div className="empty-state"><strong>No field work recorded yet</strong><span>Use “Record work” to add a milestone for any inventory group.</span></div>}
                 </div>
               ) : view === "orders" ? (
-                <div className="table-wrap"><table><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Status</th><th>Client / order</th><th>Marked With</th><th /></tr></thead><tbody>
+                <div className="table-wrap"><table><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Price</th><th>Status</th><th>Client / order</th><th>Marked With</th><th /></tr></thead><tbody>
                   {filteredAllocations.map((allocation) => <tr key={allocation.id}>
                     <td><strong>{allocation.zoneId}-{String(allocation.groupId).padStart(3, "0")}</strong><small>Allocation #{allocation.id}</small></td>
                     <td><strong>{allocation.species}</strong><small>{allocation.height} · {allocation.caliper}</small></td>
                     <td className="qty">{allocation.quantity}</td>
+                    <td className="price-cell"><strong>{formatMoney(allocation.priceCents)}</strong><small>{formatMoney(allocation.priceCents * allocation.quantity)} total</small></td>
                     <td><span className={`badge ${allocation.status.toLowerCase()}`}>{allocation.status}</span></td>
                     <td><strong>{allocation.client}</strong><small>{allocation.orderNumber || "No order assigned"}</small></td>
                     <td>{allocation.markingMethod || "Not specified"}</td>
                     <td><button className="more" aria-label={`Edit ${allocation.species} allocation`} onClick={() => { setActiveGroup(allocation.groupId); setActiveAllocation(allocation.id); setModal("status"); }}>•••</button></td>
                   </tr>)}
-                  {!filteredAllocations.length && <tr><td colSpan={7}><div className="empty">No client allocations match this search.</div></td></tr>}
+                  {!filteredAllocations.length && <tr><td colSpan={8}><div className="empty">No client allocations match this search.</div></td></tr>}
                 </tbody></table></div>
               ) : (
-                <div className="table-wrap"><table><thead><tr><th>Tree group ID</th><th>Species / size</th><th>On property</th><th>Availability</th><th>Planted</th><th>Actions</th></tr></thead><tbody>
+                <div className="table-wrap"><table><thead><tr><th>Tree group ID</th><th>Species / size</th><th>Price</th><th>On property</th><th>Availability</th><th>Planted</th><th>Actions</th></tr></thead><tbody>
                   {filteredGroups.map((group) => <tr key={group.id}>
                     <td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{farms.find((item) => group.zoneId.startsWith(item.code))?.name || group.zoneId} · {group.zoneId}</small></td>
                     <td><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td>
+                    <td className="price-cell"><strong>{formatMoney(group.priceCents)}</strong><small>per tree</small></td>
                     <td className="qty">{group.quantity}</td>
                     <td><div className="inventory-split"><span className="available">A {group.availableQuantity}</span><span className="tagged">T {group.taggedQuantity}</span><span className="sold">S {group.soldQuantity}</span></div></td>
                     <td>{/^\d{4}-\d{2}-\d{2}$/.test(group.plantedOn) ? new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString() : "Not recorded"}</td>
@@ -719,7 +735,8 @@ export default function Home() {
             <label className="full">Farm / Watering / Zone<select name="zoneId" defaultValue={zone?.id}>{farms.flatMap((f) => f.zones).map((z) => <option key={z.id} value={z.id}>{z.id} · {z.name}</option>)}</select></label>
             <label className="full">Species<input name="species" required placeholder="e.g. Live Oak" /></label>
             <label>Height<input name="height" required placeholder="12–14 ft" /></label><label>Caliper<input name="caliper" required placeholder="3.5 in" /></label>
-            <label>Quantity<input name="quantity" type="number" min="1" required placeholder="50" /></label><label>Planting date<input name="plantedOn" type="date" required /></label>
+            <label>Quantity<input name="quantity" type="number" min="1" required placeholder="50" /></label><label>Price per tree<input name="price" type="number" min="0" step="0.01" required placeholder="0.00" /></label>
+            <label className="full">Planting date<input name="plantedOn" type="date" required /></label>
             <input type="hidden" name="status" value="Available" />
           </>}
           {modal === "edit-group" && selectedGroup && <>
@@ -729,7 +746,7 @@ export default function Home() {
             <datalist id="zone-label-options">{farms.flatMap((f) => f.zones).map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}</datalist>
             <label className="full">Species<input name="species" required maxLength={100} defaultValue={selectedGroup.species} /></label>
             <label>Height<input name="height" required maxLength={40} defaultValue={selectedGroup.height} /></label><label>Caliper<input name="caliper" required maxLength={40} defaultValue={selectedGroup.caliper} /></label>
-            <label>Quantity<input name="quantity" type="number" min={selectedGroup.taggedQuantity + selectedGroup.soldQuantity || 1} required defaultValue={selectedGroup.quantity} /><small>Cannot be lower than {selectedGroup.taggedQuantity + selectedGroup.soldQuantity} tagged or sold.</small></label>
+            <label>Quantity<input name="quantity" type="number" min={selectedGroup.taggedQuantity + selectedGroup.soldQuantity || 1} required defaultValue={selectedGroup.quantity} /><small>Cannot be lower than {selectedGroup.taggedQuantity + selectedGroup.soldQuantity} tagged or sold.</small></label><label>Price per tree<input name="price" type="number" min="0" step="0.01" required defaultValue={(selectedGroup.priceCents / 100).toFixed(2)} /></label>
             <label>Planting date (optional)<input name="plantedOn" type="date" defaultValue={/^\d{4}-\d{2}-\d{2}$/.test(selectedGroup.plantedOn) ? selectedGroup.plantedOn : ""} /></label>
             <div className="delete-group-panel full"><div><strong>Delete entire group</strong><span>Also removes its allocations and work history.</span></div><button type="button" className="danger" disabled={busy} onClick={() => deleteGroup(selectedGroup)}>Delete group</button></div>
           </>}
@@ -749,7 +766,7 @@ export default function Home() {
             <div className="selected-record full">
               <span>{selectedGroup?.zoneId}-{String(activeGroup).padStart(3, "0")}</span>
               <strong>{selectedGroup?.species}</strong>
-              <small>{selectedGroup?.height} · {selectedGroup?.caliper} · {selectedGroup?.availableQuantity || 0} currently available</small>
+              <small>{selectedGroup?.height} · {selectedGroup?.caliper} · {formatMoney(selectedGroup?.priceCents || 0)} each · {selectedGroup?.availableQuantity || 0} currently available</small>
             </div>
             <label>Availability status<select name="status" defaultValue={selectedAllocation?.status || "Tagged"}><option>Tagged</option><option>Sold</option></select></label>
             <label>Quantity<input name="quantity" type="number" min="1" max={(selectedGroup?.availableQuantity || 0) + (selectedAllocation?.quantity || 0)} required defaultValue={selectedAllocation?.quantity || 1} /></label>

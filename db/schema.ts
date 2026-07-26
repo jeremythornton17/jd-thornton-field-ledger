@@ -8,6 +8,7 @@ export const inventoryGroups = sqliteTable("inventory_groups", {
   height: text("height").notNull(),
   caliper: text("caliper").notNull(),
   quantity: integer("quantity").notNull(),
+  priceCents: integer("price_cents").notNull().default(0),
   status: text("status").notNull().default("Available"),
   client: text("client").notNull().default(""),
   orderNumber: text("order_number").notNull().default(""),

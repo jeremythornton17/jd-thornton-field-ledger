@@ -1,0 +1,1 @@
+ALTER TABLE `inventory_groups` ADD `price_cents` integer DEFAULT 0 NOT NULL;

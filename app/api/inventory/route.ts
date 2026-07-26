@@ -7,6 +7,7 @@ type InventoryPayload = {
   height?: string;
   caliper?: string;
   quantity?: number;
+  priceCents?: number;
   client?: string;
   orderNumber?: string;
   plantedOn?: string;
@@ -31,6 +32,7 @@ async function ensureSchema() {
       height TEXT NOT NULL,
       caliper TEXT NOT NULL,
       quantity INTEGER NOT NULL,
+      price_cents INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'Available',
       client TEXT NOT NULL DEFAULT '',
       order_number TEXT NOT NULL DEFAULT '',
@@ -57,6 +59,10 @@ async function ensureSchema() {
     )`),
     db.prepare("CREATE INDEX IF NOT EXISTS inventory_allocations_group_idx ON inventory_allocations(group_id)"),
   ]);
+  const columns = await db.prepare("PRAGMA table_info(inventory_groups)").all<{ name: string }>();
+  if (!columns.results.some((column) => column.name === "price_cents")) {
+    await db.prepare("ALTER TABLE inventory_groups ADD COLUMN price_cents INTEGER NOT NULL DEFAULT 0").run();
+  }
 }
 
 async function migrateLegacyCommitments() {
@@ -85,7 +91,7 @@ export async function GET() {
     await ensureSchema();
     await migrateLegacyCommitments();
     const groups = await env.DB.prepare(`SELECT
-      g.id, g.zone_id AS zoneId, g.species, g.height, g.caliper, g.quantity,
+      g.id, g.zone_id AS zoneId, g.species, g.height, g.caliper, g.quantity, g.price_cents AS priceCents,
       MAX(g.quantity - COALESCE(a.committed, 0), 0) AS availableQuantity,
       COALESCE(a.tagged, 0) AS taggedQuantity,
       COALESCE(a.sold, 0) AS soldQuantity,
@@ -103,7 +109,7 @@ export async function GET() {
     const allocations = await env.DB.prepare(`SELECT
       a.id, a.group_id AS groupId, a.quantity, a.status, a.client,
       a.order_number AS orderNumber, a.marking_method AS markingMethod,
-      a.created_at AS createdAt, g.zone_id AS zoneId, g.species, g.height, g.caliper
+      a.created_at AS createdAt, g.zone_id AS zoneId, g.species, g.height, g.caliper, g.price_cents AS priceCents
       FROM inventory_allocations a
       JOIN inventory_groups g ON g.id = a.group_id
       ORDER BY a.id DESC`).all();
@@ -122,27 +128,30 @@ export async function POST(request: Request) {
     const data = (await request.json()) as InventoryPayload;
 
     if (data.action === "add-group") {
-      if (!data.zoneId || !data.species || !data.height || !data.caliper || !data.quantity || !data.plantedOn) {
-        return Response.json({ error: "Complete all required inventory fields." }, { status: 400 });
+      if (!data.zoneId || !data.species || !data.height || !data.caliper || !data.quantity || !data.plantedOn || !Number.isInteger(data.priceCents) || data.priceCents < 0) {
+        return Response.json({ error: "Complete all required inventory fields with a valid non-negative price." }, { status: 400 });
       }
-      const existing = await env.DB.prepare(`SELECT id FROM inventory_groups
+      const existing = await env.DB.prepare(`SELECT id, price_cents AS priceCents FROM inventory_groups
         WHERE zone_id = ? AND lower(species) = lower(?) AND height = ? AND caliper = ? LIMIT 1`)
         .bind(data.zoneId, data.species.trim(), data.height.trim(), data.caliper.trim())
-        .first<{ id: number }>();
+        .first<{ id: number; priceCents: number }>();
       if (existing) {
+        if (existing.priceCents !== data.priceCents) {
+          return Response.json({ error: "This group already exists with a different price. Edit the existing group before adding more trees." }, { status: 409 });
+        }
         await env.DB.prepare("UPDATE inventory_groups SET quantity = quantity + ?, planted_on = MIN(planted_on, ?) WHERE id = ?")
           .bind(data.quantity, data.plantedOn, existing.id).run();
         return Response.json({ ok: true, id: existing.id, merged: true }, { status: 200 });
       }
       const result = await env.DB.prepare(
-        "INSERT INTO inventory_groups (zone_id,species,height,caliper,quantity,status,client,order_number,planted_on) VALUES (?,?,?,?,?,'Available','','',?) RETURNING id"
-      ).bind(data.zoneId, data.species.trim(), data.height.trim(), data.caliper.trim(), data.quantity, data.plantedOn).first();
+        "INSERT INTO inventory_groups (zone_id,species,height,caliper,quantity,price_cents,status,client,order_number,planted_on) VALUES (?,?,?,?,?,?,'Available','','',?) RETURNING id"
+      ).bind(data.zoneId, data.species.trim(), data.height.trim(), data.caliper.trim(), data.quantity, data.priceCents, data.plantedOn).first();
       return Response.json({ ok: true, id: result?.id }, { status: 201 });
     }
 
     if (data.action === "update-group") {
-      if (!data.groupId || !data.zoneId?.trim() || !data.species?.trim() || !data.height?.trim() || !data.caliper?.trim() || !data.quantity || data.quantity < 1) {
-        return Response.json({ error: "Complete the zone, species, size, and quantity fields." }, { status: 400 });
+      if (!data.groupId || !data.zoneId?.trim() || !data.species?.trim() || !data.height?.trim() || !data.caliper?.trim() || !data.quantity || data.quantity < 1 || !Number.isInteger(data.priceCents) || data.priceCents < 0) {
+        return Response.json({ error: "Complete the zone, species, size, quantity, and price fields." }, { status: 400 });
       }
       const group = await env.DB.prepare(`SELECT g.id,
         COALESCE((SELECT SUM(quantity) FROM inventory_allocations WHERE group_id = g.id), 0) AS committed
@@ -160,11 +169,11 @@ export async function POST(request: Request) {
       }
       await env.DB.batch([
         env.DB.prepare(`UPDATE inventory_groups
-          SET zone_id = ?, species = ?, height = ?, caliper = ?, quantity = ?,
+          SET zone_id = ?, species = ?, height = ?, caliper = ?, quantity = ?, price_cents = ?,
               planted_on = CASE WHEN ? = '' THEN planted_on ELSE ? END
           WHERE id = ?`)
           .bind(
-            data.zoneId.trim(), data.species.trim(), data.height.trim(), data.caliper.trim(), data.quantity,
+            data.zoneId.trim(), data.species.trim(), data.height.trim(), data.caliper.trim(), data.quantity, data.priceCents,
             data.plantedOn || "", data.plantedOn || "", data.groupId,
           ),
         env.DB.prepare("UPDATE activities SET zone_id = ? WHERE group_id = ?").bind(data.zoneId.trim(), data.groupId),
