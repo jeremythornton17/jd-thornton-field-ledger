@@ -70,19 +70,24 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
     canvas.width = width * ratio;
     canvas.height = height * ratio;
     ctx.scale(ratio, ratio);
-    const detailCoordinates = [
-      ...(farm.boundary || []),
-      ...(farm.roads || []).flatMap((item) => item.coordinates),
-      ...(farm.features || []).flatMap((item) => item.coordinates),
-      ...(farm.infrastructure || []).flatMap((item) => item.coordinates),
-    ];
-    const all = [...farm.zones.flatMap((z) => z.coordinates), ...detailCoordinates];
+    const all = farm.zones.flatMap((z) => z.coordinates);
     const xs = all.map((p) => p[0]);
     const ys = all.map((p) => p[1]);
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
     const pad = 28;
-    const scale = Math.min((width - pad * 2) / (maxX - minX), (height - pad * 2) / (maxY - minY));
-    const project = ([x, y]: [number, number]) => ({ x: pad + (x - minX) * scale, y: height - pad - (y - minY) * scale });
+    const averageLatitude = ys.reduce((sum, value) => sum + value, 0) / ys.length;
+    const longitudeCorrection = Math.cos(averageLatitude * Math.PI / 180);
+    const geographicWidth = (maxX - minX) * longitudeCorrection;
+    const geographicHeight = maxY - minY;
+    const scale = Math.min((width - pad * 2) / geographicWidth, (height - pad * 2) / geographicHeight);
+    const drawnWidth = geographicWidth * scale;
+    const drawnHeight = geographicHeight * scale;
+    const offsetX = (width - drawnWidth) / 2;
+    const offsetY = (height - drawnHeight) / 2;
+    const project = ([x, y]: [number, number]) => ({
+      x: offsetX + (x - minX) * longitudeCorrection * scale,
+      y: offsetY + drawnHeight - (y - minY) * scale,
+    });
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = "#ebe7dc";
     ctx.fillRect(0, 0, width, height);

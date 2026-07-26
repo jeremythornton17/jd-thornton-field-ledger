@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -51,6 +52,22 @@ def collect_features(folder):
         if shape:
             output.append({"name": placemark_name(placemark), **shape})
     return output
+
+
+def feature_near_zones(feature, zones, margin_ratio=0.35):
+    zone_points = [point for zone in zones for point in zone["coordinates"]]
+    if not zone_points:
+        return True
+    xs = [point[0] for point in zone_points]
+    ys = [point[1] for point in zone_points]
+    span_x = max(xs) - min(xs)
+    span_y = max(ys) - min(ys)
+    center_x = sum(point[0] for point in feature["coordinates"]) / len(feature["coordinates"])
+    center_y = sum(point[1] for point in feature["coordinates"]) / len(feature["coordinates"])
+    return (
+        min(xs) - span_x * margin_ratio <= center_x <= max(xs) + span_x * margin_ratio
+        and min(ys) - span_y * margin_ratio <= center_y <= max(ys) + span_y * margin_ratio
+    )
 
 
 def code(value):
@@ -109,13 +126,7 @@ def main():
         )
         if irrigation is not None:
             for pump_folder in child_folders(irrigation):
-                pump_name = (
-                    folder_name(pump_folder)
-                    .replace(" Pump Zones", "")
-                    .replace(" Zones 1-12", "")
-                    .replace(" Zones 1-7", "")
-                    .strip()
-                )
+                pump_name = re.sub(r"\s+Pump Zones.*$", "", folder_name(pump_folder)).strip()
                 pump_code = code(pump_name)
                 for placemark in pump_folder.findall("k:Placemark", NS):
                     name_node = placemark.find("k:name", NS)
@@ -161,6 +172,16 @@ def main():
                 farm["features"].extend(collect_features(detail_folder))
             elif detail_name == "Irrigation Infrastructure":
                 farm["infrastructure"].extend(collect_features(detail_folder))
+
+        farm["roads"] = [
+            feature for feature in farm["roads"] if feature_near_zones(feature, farm["zones"], 0.5)
+        ]
+        farm["features"] = [
+            feature for feature in farm["features"] if feature_near_zones(feature, farm["zones"])
+        ]
+        farm["infrastructure"] = [
+            feature for feature in farm["infrastructure"] if feature_near_zones(feature, farm["zones"])
+        ]
         farms.append(farm)
 
     target.parent.mkdir(parents=True, exist_ok=True)
