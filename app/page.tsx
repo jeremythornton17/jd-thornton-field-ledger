@@ -430,19 +430,30 @@ export default function Home() {
       ? farms.find((item) => item.code === inventoryFarmCodes[0])?.name || "1 farm"
       : `${inventoryFarmCodes.length} farms`;
   const speciesBreakdown = useMemo(() => {
-    const summary = new Map<string, { species: string; height: string; caliper: string; total: number; available: number; tagged: number; sold: number }>();
+    type SizeSummary = { height: string; caliper: string; total: number; available: number; tagged: number; sold: number };
+    type SpeciesSummary = { species: string; sizes: Map<string, SizeSummary> };
+    const summary = new Map<string, SpeciesSummary>();
     const scopeCodes = view === "inventory" ? inventoryFarmCodes : [farmCode];
     groups.filter((group) => scopeCodes.some((code) => group.zoneId.startsWith(code))).forEach((group) => {
-      const key = `${group.species}|${group.height}|${group.caliper}`;
-      const row = summary.get(key) || { species: group.species, height: group.height, caliper: group.caliper, total: 0, available: 0, tagged: 0, sold: 0 };
-      row.total += group.quantity;
-      row.available += group.availableQuantity;
-      row.tagged += group.taggedQuantity;
-      row.sold += group.soldQuantity;
-      summary.set(key, row);
+      const speciesKey = group.species.trim().toLocaleLowerCase();
+      const sizeKey = `${group.height.trim().toLocaleLowerCase()}|${group.caliper.trim().toLocaleLowerCase()}`;
+      const species = summary.get(speciesKey) || { species: group.species.trim(), sizes: new Map<string, SizeSummary>() };
+      const size = species.sizes.get(sizeKey) || { height: group.height.trim(), caliper: group.caliper.trim(), total: 0, available: 0, tagged: 0, sold: 0 };
+      size.total += group.quantity;
+      size.available += group.availableQuantity;
+      size.tagged += group.taggedQuantity;
+      size.sold += group.soldQuantity;
+      species.sizes.set(sizeKey, size);
+      summary.set(speciesKey, species);
     });
-    return [...summary.values()].sort((a, b) => `${a.species} ${a.height} ${a.caliper}`.localeCompare(`${b.species} ${b.height} ${b.caliper}`, undefined, { numeric: true }));
+    return [...summary.values()]
+      .map((item) => ({
+        species: item.species,
+        sizes: [...item.sizes.values()].sort((a, b) => `${a.height} ${a.caliper}`.localeCompare(`${b.height} ${b.caliper}`, undefined, { numeric: true })),
+      }))
+      .sort((a, b) => a.species.localeCompare(b.species));
   }, [groups, farmCode, inventoryFarmCodes, view]);
+  const speciesSizeGroupCount = speciesBreakdown.reduce((sum, item) => sum + item.sizes.length, 0);
   const selectedGroup = groups.find((group) => group.id === activeGroup);
   const selectedAllocation = allocations.find((allocation) => allocation.id === activeAllocation);
 
@@ -575,17 +586,24 @@ export default function Home() {
             <article><span>{farm?.name || "Current farm"}</span><strong>{totalTrees.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped {isHandWatered ? "hand-watered" : "irrigation"} zones</small></article>
           </div>
           <details className="species-breakdown" open>
-            <summary><span>Inventory by species &amp; size</span><small>{view === "inventory" ? inventoryScopeLabel : farm?.name || "Current farm"} · {speciesBreakdown.length} species / size groups</small></summary>
-            <div className="species-grid">
+            <summary><span>Inventory by species &amp; size</span><small>{view === "inventory" ? inventoryScopeLabel : farm?.name || "Current farm"} · {speciesBreakdown.length} species · {speciesSizeGroupCount} size groups</small></summary>
+            <div className="species-columns">
               {speciesBreakdown.map((item) => (
-                <article key={`${item.species}-${item.height}-${item.caliper}`}>
-                  <div><strong>{item.species}</strong><small>{item.height} · {item.caliper}</small></div>
-                  <b>{item.total}</b>
-                  <span className="available">A {item.available}</span>
-                  <span className="tagged">T {item.tagged}</span>
-                  <span className="sold">S {item.sold}</span>
-                </article>
+                <section className="species-column" key={item.species}>
+                  <header><strong>{item.species}</strong><small>{item.sizes.length} {item.sizes.length === 1 ? "size" : "sizes"}</small></header>
+                  <div className="species-column-head"><span>Size</span><span>Total</span><span>Available</span><span>Tagged</span><span>Sold</span></div>
+                  {item.sizes.map((size) => (
+                    <div className="species-size-row" key={`${item.species}-${size.height}-${size.caliper}`}>
+                      <div><strong>{size.height}</strong><small>{size.caliper}</small></div>
+                      <b>{size.total.toLocaleString()}</b>
+                      <span className="available">{size.available.toLocaleString()}</span>
+                      <span className="tagged">{size.tagged.toLocaleString()}</span>
+                      <span className="sold">{size.sold.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </section>
               ))}
+              {!speciesBreakdown.length && <div className="species-empty">No inventory in the current farm scope.</div>}
             </div>
           </details>
 
