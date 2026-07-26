@@ -30,10 +30,24 @@ type Group = {
   height: string;
   caliper: string;
   quantity: number;
-  status: string;
+  availableQuantity: number;
+  taggedQuantity: number;
+  soldQuantity: number;
+  plantedOn: string;
+};
+type Allocation = {
+  id: number;
+  groupId: number;
+  zoneId: string;
+  species: string;
+  height: string;
+  caliper: string;
+  quantity: number;
+  status: "Tagged" | "Sold";
   client: string;
   orderNumber: string;
-  plantedOn: string;
+  markingMethod: string;
+  createdAt: string;
 };
 type Activity = {
   id: number;
@@ -46,11 +60,15 @@ type Activity = {
 };
 
 const FALLBACK_GROUPS: Group[] = [
-  { id: 1, zoneId: "F70-FRONT-01", species: "Live Oak", height: "12–14 ft", caliper: "3.5 in", quantity: 86, status: "Available", client: "", orderNumber: "", plantedOn: "2024-02-12" },
-  { id: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, status: "Tagged", client: "Palm Beach Gardens", orderNumber: "SO-2408", plantedOn: "2023-11-06" },
-  { id: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, status: "Sold", client: "Evergreen Landscape", orderNumber: "SO-2391", plantedOn: "2023-08-18" },
-  { id: 4, zoneId: "F40-WEST-05", species: "Gumbo Limbo", height: "8–10 ft", caliper: "2.5 in", quantity: 115, status: "Available", client: "", orderNumber: "", plantedOn: "2025-01-20" },
-  { id: 5, zoneId: "F25-NORTH-02", species: "Royal Poinciana", height: "10–12 ft", caliper: "3 in", quantity: 64, status: "Available", client: "", orderNumber: "", plantedOn: "2024-05-14" },
+  { id: 1, zoneId: "F70-FRONT-01", species: "Live Oak", height: "12–14 ft", caliper: "3.5 in", quantity: 86, availableQuantity: 86, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-02-12" },
+  { id: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, availableQuantity: 0, taggedQuantity: 42, soldQuantity: 0, plantedOn: "2023-11-06" },
+  { id: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, availableQuantity: 0, taggedQuantity: 0, soldQuantity: 28, plantedOn: "2023-08-18" },
+  { id: 4, zoneId: "F40-WEST-05", species: "Gumbo Limbo", height: "8–10 ft", caliper: "2.5 in", quantity: 115, availableQuantity: 115, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2025-01-20" },
+  { id: 5, zoneId: "F25-NORTH-02", species: "Royal Poinciana", height: "10–12 ft", caliper: "3 in", quantity: 64, availableQuantity: 64, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-05-14" },
+];
+const FALLBACK_ALLOCATIONS: Allocation[] = [
+  { id: 1, groupId: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, status: "Tagged", client: "Palm Beach Gardens", orderNumber: "SO-2408", markingMethod: "Ribbon tag", createdAt: "" },
+  { id: 2, groupId: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, status: "Sold", client: "Evergreen Landscape", orderNumber: "SO-2391", markingMethod: "Metal tag", createdAt: "" },
 ];
 
 type MapLayers = { roads: boolean; operations: boolean; irrigation: boolean };
@@ -59,10 +77,6 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shapesRef = useRef<{ zone: Zone; points: { x: number; y: number }[]; center: { x: number; y: number } }[]>([]);
   const [zoom, setZoom] = useState(farm.code === "F70" ? 1.15 : 1);
-
-  useEffect(() => {
-    setZoom(farm.code === "F70" ? 1.15 : 1);
-  }, [farm.code]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -344,6 +358,7 @@ export default function Home() {
   const [farmCode, setFarmCode] = useState("F70");
   const [selectedZone, setSelectedZone] = useState("F70-FRONT-01");
   const [groups, setGroups] = useState<Group[]>(FALLBACK_GROUPS);
+  const [allocations, setAllocations] = useState<Allocation[]>(FALLBACK_ALLOCATIONS);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [view, setView] = useState<"overview" | "inventory" | "work" | "orders">("overview");
   const [modal, setModal] = useState<"inventory" | "activity" | "status" | null>(null);
@@ -351,6 +366,7 @@ export default function Home() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeGroup, setActiveGroup] = useState<number>(1);
+  const [activeAllocation, setActiveAllocation] = useState<number | null>(null);
   const [layers, setLayers] = useState<MapLayers>({ roads: true, operations: true, irrigation: true });
 
   const loadInventory = async () => {
@@ -359,6 +375,7 @@ export default function Home() {
       if (!response.ok) throw new Error();
       const data = await response.json();
       setGroups(data.groups);
+      setAllocations(data.allocations || []);
       setActivities(data.activities);
     } catch {
       setNotice("Prototype data is active; hosted records will sync when the database is available.");
@@ -367,20 +384,49 @@ export default function Home() {
 
   useEffect(() => {
     fetch("/farm-map.json").then((r) => r.json()).then((data) => setFarms(data.farms));
-    loadInventory();
+    fetch("/api/inventory")
+      .then((response) => {
+        if (!response.ok) throw new Error();
+        return response.json();
+      })
+      .then((data) => {
+        setGroups(data.groups);
+        setAllocations(data.allocations || []);
+        setActivities(data.activities);
+      })
+      .catch(() => setNotice("Prototype data is active; hosted records will sync when the database is available."));
   }, []);
 
   const farm = farms.find((item) => item.code === farmCode) || farms[0];
   const zone = farm?.zones.find((item) => item.id === selectedZone) || farm?.zones[0];
   const filteredGroups = groups.filter((group) =>
     (view === "overview" ? group.zoneId === zone?.id : true) &&
-    `${group.zoneId} ${group.species} ${group.client} ${group.orderNumber}`.toLowerCase().includes(search.toLowerCase())
+    `${group.zoneId} ${group.species} ${group.height} ${group.caliper}`.toLowerCase().includes(search.toLowerCase())
+  );
+  const filteredAllocations = allocations.filter((allocation) =>
+    `${allocation.zoneId} ${allocation.species} ${allocation.height} ${allocation.caliper} ${allocation.client} ${allocation.orderNumber} ${allocation.markingMethod}`.toLowerCase().includes(search.toLowerCase())
   );
   const totalTrees = groups.reduce((sum, group) => sum + group.quantity, 0);
-  const available = groups.filter((g) => g.status === "Available").reduce((sum, group) => sum + group.quantity, 0);
-  const allocated = totalTrees - available;
+  const available = groups.reduce((sum, group) => sum + group.availableQuantity, 0);
+  const tagged = groups.reduce((sum, group) => sum + group.taggedQuantity, 0);
+  const sold = groups.reduce((sum, group) => sum + group.soldQuantity, 0);
   const farmTotal = groups.filter((g) => g.zoneId.startsWith(farmCode)).reduce((sum, group) => sum + group.quantity, 0);
   const pumps = useMemo(() => [...new Set(farm?.zones.map((z) => z.pump) || [])], [farm]);
+  const speciesBreakdown = useMemo(() => {
+    const summary = new Map<string, { species: string; height: string; caliper: string; total: number; available: number; tagged: number; sold: number }>();
+    groups.forEach((group) => {
+      const key = `${group.species}|${group.height}|${group.caliper}`;
+      const row = summary.get(key) || { species: group.species, height: group.height, caliper: group.caliper, total: 0, available: 0, tagged: 0, sold: 0 };
+      row.total += group.quantity;
+      row.available += group.availableQuantity;
+      row.tagged += group.taggedQuantity;
+      row.sold += group.soldQuantity;
+      summary.set(key, row);
+    });
+    return [...summary.values()].sort((a, b) => `${a.species} ${a.height} ${a.caliper}`.localeCompare(`${b.species} ${b.height} ${b.caliper}`, undefined, { numeric: true }));
+  }, [groups]);
+  const selectedGroup = groups.find((group) => group.id === activeGroup);
+  const selectedAllocation = allocations.find((allocation) => allocation.id === activeAllocation);
 
   function changeFarm(code: string) {
     setFarmCode(code);
@@ -393,16 +439,42 @@ export default function Home() {
     setBusy(true);
     const form = new FormData(event.currentTarget);
     const payload: Record<string, unknown> = Object.fromEntries(form.entries());
-    if (modal === "inventory") payload.quantity = Number(payload.quantity);
+    if (modal === "inventory" || modal === "status") payload.quantity = Number(payload.quantity);
     if (modal === "activity" || modal === "status") payload.groupId = Number(payload.groupId);
+    if (modal === "status" && payload.allocationId) payload.allocationId = Number(payload.allocationId);
     try {
       const response = await fetch("/api/inventory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       if (!response.ok) throw new Error((await response.json()).error);
       await loadInventory();
-      setNotice(modal === "inventory" ? "Tree group added to inventory." : modal === "activity" ? "Milestone recorded." : "Client and order status updated.");
+      setNotice(modal === "inventory" ? "Tree group added to inventory." : modal === "activity" ? "Milestone recorded." : "Client allocation saved.");
       setModal(null);
+      setActiveAllocation(null);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to save the change.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function receiveAllocation(allocation: Allocation) {
+    const confirmed = window.confirm(
+      `Are you sure ${allocation.quantity} ${allocation.species} trees were received by ${allocation.client}? This will permanently remove them from on-property inventory.`
+    );
+    if (!confirmed) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/inventory", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "receive-allocation", allocationId: allocation.id }),
+      });
+      if (!response.ok) throw new Error((await response.json()).error);
+      await loadInventory();
+      setNotice(`${allocation.quantity} ${allocation.species} trees were marked received and removed from on-property inventory.`);
+      setModal(null);
+      setActiveAllocation(null);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to complete the delivery.");
     } finally {
       setBusy(false);
     }
@@ -446,9 +518,24 @@ export default function Home() {
           <div className="metrics">
             <article><span>Total trees</span><strong>{totalTrees.toLocaleString()}</strong><small>Across {groups.length} inventory groups</small></article>
             <article><span>Available</span><strong>{available.toLocaleString()}</strong><small>{totalTrees ? Math.round(available / totalTrees * 100) : 0}% ready for allocation</small></article>
-            <article><span>Committed</span><strong>{allocated.toLocaleString()}</strong><small>Tagged or sold for clients</small></article>
+            <article><span>Tagged</span><strong>{tagged.toLocaleString()}</strong><small>Marked for clients</small></article>
+            <article><span>Sold</span><strong>{sold.toLocaleString()}</strong><small>Awaiting customer receipt</small></article>
             <article><span>{farm?.name || "Current farm"}</span><strong>{farmTotal.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped irrigation zones</small></article>
           </div>
+          <details className="species-breakdown" open>
+            <summary><span>Inventory by species &amp; size</span><small>{speciesBreakdown.length} species / size groups</small></summary>
+            <div className="species-grid">
+              {speciesBreakdown.map((item) => (
+                <article key={`${item.species}-${item.height}-${item.caliper}`}>
+                  <div><strong>{item.species}</strong><small>{item.height} · {item.caliper}</small></div>
+                  <b>{item.total}</b>
+                  <span className="available">A {item.available}</span>
+                  <span className="tagged">T {item.tagged}</span>
+                  <span className="sold">S {item.sold}</span>
+                </article>
+              ))}
+            </div>
+          </details>
 
           {view === "overview" && farm && zone && (
             <div className="overview-grid">
@@ -459,7 +546,7 @@ export default function Home() {
                     <button key={key} className={layers[key] ? "enabled" : ""} onClick={() => setLayers((current) => ({ ...current, [key]: !current[key] }))}><span />{label}</button>
                   )}
                 </div>
-                <FarmCanvas farm={farm} selectedZone={zone.id} layers={layers} onSelect={(next) => setSelectedZone(next.id)} />
+                <FarmCanvas key={farm.code} farm={farm} selectedZone={zone.id} layers={layers} onSelect={(next) => setSelectedZone(next.id)} />
                 <div className="map-footer"><span>Click a zone to inspect its trees</span><strong>{zone.id}</strong></div>
               </section>
               <section className="zone-panel">
@@ -478,8 +565,10 @@ export default function Home() {
                 <div className="zone-total"><span>Current inventory</span><strong>{filteredGroups.reduce((s, g) => s + g.quantity, 0)}</strong><small>trees in {filteredGroups.length} groups</small></div>
                 <div className="zone-list">
                   {filteredGroups.length ? filteredGroups.map((group) => (
-                    <button key={group.id} onClick={() => { setActiveGroup(group.id); setModal("status"); }}>
-                      <span className={`status-dot ${group.status.toLowerCase()}`} /><span><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></span><b>{group.quantity}</b>
+                    <button key={group.id} onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>
+                      <span className={`status-dot ${group.soldQuantity ? "sold" : group.taggedQuantity ? "tagged" : "available"}`} />
+                      <span><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small><small className="quantity-split">A {group.availableQuantity} · T {group.taggedQuantity} · S {group.soldQuantity}</small></span>
+                      <b>{group.quantity}</b>
                     </button>
                   )) : <div className="empty">No inventory recorded in this zone yet.</div>}
                 </div>
@@ -501,9 +590,29 @@ export default function Home() {
                     return <article key={activity.id}><div className="date-block"><b>{new Date(`${activity.activityDate}T12:00:00`).toLocaleDateString("en-US", { month: "short" })}</b><strong>{activity.activityDate.slice(-2)}</strong></div><div><span className="activity-type">{activity.activityType}</span><h3>{group?.species || "Tree group"} · {activity.zoneId}</h3><p>{activity.details || "Field work completed."}</p><small>Recorded by {activity.performedBy || "Farm team"}</small></div></article>;
                   }) : <div className="empty-state"><strong>No field work recorded yet</strong><span>Use “Record work” to add a milestone for any inventory group.</span></div>}
                 </div>
+              ) : view === "orders" ? (
+                <div className="table-wrap"><table><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Status</th><th>Client / order</th><th>Marked as</th><th /></tr></thead><tbody>
+                  {filteredAllocations.map((allocation) => <tr key={allocation.id}>
+                    <td><strong>{allocation.zoneId}-{String(allocation.groupId).padStart(3, "0")}</strong><small>Allocation #{allocation.id}</small></td>
+                    <td><strong>{allocation.species}</strong><small>{allocation.height} · {allocation.caliper}</small></td>
+                    <td className="qty">{allocation.quantity}</td>
+                    <td><span className={`badge ${allocation.status.toLowerCase()}`}>{allocation.status}</span></td>
+                    <td><strong>{allocation.client}</strong><small>{allocation.orderNumber || "No order assigned"}</small></td>
+                    <td>{allocation.markingMethod || "Not specified"}</td>
+                    <td><button className="more" aria-label={`Edit ${allocation.species} allocation`} onClick={() => { setActiveGroup(allocation.groupId); setActiveAllocation(allocation.id); setModal("status"); }}>•••</button></td>
+                  </tr>)}
+                  {!filteredAllocations.length && <tr><td colSpan={7}><div className="empty">No client allocations match this search.</div></td></tr>}
+                </tbody></table></div>
               ) : (
-                <div className="table-wrap"><table><thead><tr><th>Tree ID</th><th>Species / size</th><th>Qty</th><th>Status</th><th>{view === "orders" ? "Client / order" : "Planted"}</th><th /></tr></thead><tbody>
-                  {filteredGroups.map((group) => <tr key={group.id}><td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{group.zoneId}</small></td><td><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td><td className="qty">{group.quantity}</td><td><span className={`badge ${group.status.toLowerCase()}`}>{group.status}</span></td><td>{view === "orders" ? <><strong>{group.client || "—"}</strong><small>{group.orderNumber || "No order assigned"}</small></> : new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString()}</td><td><button className="more" aria-label={`Edit ${group.species}`} onClick={() => { setActiveGroup(group.id); setModal("status"); }}>•••</button></td></tr>)}
+                <div className="table-wrap"><table><thead><tr><th>Tree group ID</th><th>Species / size</th><th>On property</th><th>Availability</th><th>Planted</th><th /></tr></thead><tbody>
+                  {filteredGroups.map((group) => <tr key={group.id}>
+                    <td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{group.zoneId}</small></td>
+                    <td><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td>
+                    <td className="qty">{group.quantity}</td>
+                    <td><div className="inventory-split"><span className="available">A {group.availableQuantity}</span><span className="tagged">T {group.taggedQuantity}</span><span className="sold">S {group.soldQuantity}</span></div></td>
+                    <td>{new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString()}</td>
+                    <td><button className="more" aria-label={`Allocate ${group.species}`} onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>•••</button></td>
+                  </tr>)}
                 </tbody></table></div>
               )}
             </section>
@@ -512,8 +621,8 @@ export default function Home() {
         </div>
       </section>
 
-      {modal && <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.currentTarget === e.target) setModal(null); }}><div className="modal" role="dialog" aria-modal="true">
-        <div className="modal-head"><div><span>{modal === "inventory" ? "NEW INVENTORY GROUP" : modal === "activity" ? "FIELD ACTIVITY" : "CLIENT & ORDER"}</span><h3>{modal === "inventory" ? "Add trees to a zone" : modal === "activity" ? "Record a milestone" : "Update availability"}</h3></div><button onClick={() => setModal(null)} aria-label="Close">×</button></div>
+      {modal && <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.currentTarget === e.target) { setModal(null); setActiveAllocation(null); } }}><div className="modal" role="dialog" aria-modal="true">
+        <div className="modal-head"><div><span>{modal === "inventory" ? "NEW INVENTORY GROUP" : modal === "activity" ? "FIELD ACTIVITY" : "CLIENT & ORDER"}</span><h3>{modal === "inventory" ? "Add trees to a zone" : modal === "activity" ? "Record a milestone" : selectedAllocation ? "Edit client allocation" : "Allocate trees"}</h3></div><button onClick={() => { setModal(null); setActiveAllocation(null); }} aria-label="Close">×</button></div>
         <form onSubmit={submit}>
           {modal === "inventory" && <>
             <input type="hidden" name="action" value="add-group" />
@@ -533,13 +642,22 @@ export default function Home() {
             <label className="full">Performed by<input name="performedBy" placeholder="Crew or team member" /></label>
           </>}
           {modal === "status" && <>
-            <input type="hidden" name="action" value="update-status" /><input type="hidden" name="groupId" value={activeGroup} />
-            <div className="selected-record full"><span>{groups.find((g) => g.id === activeGroup)?.zoneId}-{String(activeGroup).padStart(3, "0")}</span><strong>{groups.find((g) => g.id === activeGroup)?.species}</strong></div>
-            <label className="full">Availability status<select name="status" defaultValue={groups.find((g) => g.id === activeGroup)?.status}><option>Available</option><option>Tagged</option><option>Sold</option></select></label>
-            <label className="full">Client<input name="client" defaultValue={groups.find((g) => g.id === activeGroup)?.client} placeholder="Client or project name" /></label>
-            <label className="full">Sales order<input name="orderNumber" defaultValue={groups.find((g) => g.id === activeGroup)?.orderNumber} placeholder="SO-0000" /></label>
+            <input type="hidden" name="action" value={selectedAllocation ? "update-allocation" : "add-allocation"} />
+            <input type="hidden" name="groupId" value={activeGroup} />
+            {selectedAllocation && <input type="hidden" name="allocationId" value={selectedAllocation.id} />}
+            <div className="selected-record full">
+              <span>{selectedGroup?.zoneId}-{String(activeGroup).padStart(3, "0")}</span>
+              <strong>{selectedGroup?.species}</strong>
+              <small>{selectedGroup?.height} · {selectedGroup?.caliper} · {selectedGroup?.availableQuantity || 0} currently available</small>
+            </div>
+            <label>Availability status<select name="status" defaultValue={selectedAllocation?.status || "Tagged"}><option>Tagged</option><option>Sold</option></select></label>
+            <label>Quantity<input name="quantity" type="number" min="1" max={(selectedGroup?.availableQuantity || 0) + (selectedAllocation?.quantity || 0)} required defaultValue={selectedAllocation?.quantity || 1} /></label>
+            <label className="full">Client<input name="client" required defaultValue={selectedAllocation?.client || ""} placeholder="Client or project name" /></label>
+            <label>Sales order<input name="orderNumber" defaultValue={selectedAllocation?.orderNumber || ""} placeholder="SO-0000" /></label>
+            <label>Marked as<select name="markingMethod" defaultValue={selectedAllocation?.markingMethod || "Ribbon tag"}><option>Ribbon tag</option><option>Metal tag</option><option>Paint mark</option><option>Flagging tape</option><option>Other</option></select></label>
+            {selectedAllocation?.status === "Sold" && <div className="receive-panel full"><span>Remove these trees after delivery or pickup is complete.</span><button type="button" className="danger" disabled={busy} onClick={() => receiveAllocation(selectedAllocation)}>Received by Customer</button></div>}
           </>}
-          <div className="form-actions full"><button type="button" className="secondary" onClick={() => setModal(null)}>Cancel</button><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save record"}</button></div>
+          <div className="form-actions full"><button type="button" className="secondary" onClick={() => { setModal(null); setActiveAllocation(null); }}>Cancel</button><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save record"}</button></div>
         </form>
       </div></div>}
     </main>

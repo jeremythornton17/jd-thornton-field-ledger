@@ -1,17 +1,19 @@
 import { env } from "cloudflare:workers";
 
 type InventoryPayload = {
-  action?: "add-group" | "add-activity" | "update-status";
+  action?: "add-group" | "add-activity" | "add-allocation" | "update-allocation" | "receive-allocation";
   zoneId?: string;
   species?: string;
   height?: string;
   caliper?: string;
   quantity?: number;
-  status?: string;
   client?: string;
   orderNumber?: string;
   plantedOn?: string;
   groupId?: number;
+  allocationId?: number;
+  status?: "Tagged" | "Sold";
+  markingMethod?: string;
   activityType?: string;
   activityDate?: string;
   details?: string;
@@ -42,13 +44,22 @@ async function ensureSchema() {
       details TEXT NOT NULL DEFAULT '',
       performed_by TEXT NOT NULL DEFAULT ''
     )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS inventory_allocations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      group_id INTEGER NOT NULL,
+      quantity INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      client TEXT NOT NULL DEFAULT '',
+      order_number TEXT NOT NULL DEFAULT '',
+      marking_method TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare("CREATE INDEX IF NOT EXISTS inventory_allocations_group_idx ON inventory_allocations(group_id)"),
   ]);
 }
 
 async function seedIfEmpty() {
-  const row = await env.DB.prepare("SELECT COUNT(*) AS count FROM inventory_groups").first<{
-    count: number;
-  }>();
+  const row = await env.DB.prepare("SELECT COUNT(*) AS count FROM inventory_groups").first<{ count: number }>();
   if ((row?.count ?? 0) > 0) return;
 
   await env.DB.batch([
@@ -70,17 +81,59 @@ async function seedIfEmpty() {
   ]);
 }
 
+async function migrateLegacyCommitments() {
+  await env.DB.prepare(`INSERT INTO inventory_allocations
+    (group_id, quantity, status, client, order_number, marking_method)
+    SELECT g.id, g.quantity, g.status, g.client, g.order_number, 'Legacy record'
+    FROM inventory_groups g
+    WHERE g.status IN ('Tagged', 'Sold')
+      AND NOT EXISTS (SELECT 1 FROM inventory_allocations a WHERE a.group_id = g.id)`).run();
+}
+
+async function availableForGroup(groupId: number, excludingAllocationId?: number) {
+  const row = await env.DB.prepare(`SELECT
+    g.quantity - COALESCE(SUM(CASE WHEN a.id != ? OR ? IS NULL THEN a.quantity ELSE 0 END), 0) AS available
+    FROM inventory_groups g
+    LEFT JOIN inventory_allocations a ON a.group_id = g.id
+    WHERE g.id = ?
+    GROUP BY g.id`)
+    .bind(excludingAllocationId ?? null, excludingAllocationId ?? null, groupId)
+    .first<{ available: number }>();
+  return row?.available ?? -1;
+}
+
 export async function GET() {
   try {
     await ensureSchema();
     await seedIfEmpty();
-    const groups = await env.DB.prepare(
-      "SELECT id, zone_id AS zoneId, species, height, caliper, quantity, status, client, order_number AS orderNumber, planted_on AS plantedOn FROM inventory_groups ORDER BY id DESC"
-    ).all();
+    await migrateLegacyCommitments();
+    const groups = await env.DB.prepare(`SELECT
+      g.id, g.zone_id AS zoneId, g.species, g.height, g.caliper, g.quantity,
+      MAX(g.quantity - COALESCE(a.committed, 0), 0) AS availableQuantity,
+      COALESCE(a.tagged, 0) AS taggedQuantity,
+      COALESCE(a.sold, 0) AS soldQuantity,
+      g.planted_on AS plantedOn
+      FROM inventory_groups g
+      LEFT JOIN (
+        SELECT group_id,
+          SUM(quantity) AS committed,
+          SUM(CASE WHEN status = 'Tagged' THEN quantity ELSE 0 END) AS tagged,
+          SUM(CASE WHEN status = 'Sold' THEN quantity ELSE 0 END) AS sold
+        FROM inventory_allocations GROUP BY group_id
+      ) a ON a.group_id = g.id
+      WHERE g.quantity > 0
+      ORDER BY g.id DESC`).all();
+    const allocations = await env.DB.prepare(`SELECT
+      a.id, a.group_id AS groupId, a.quantity, a.status, a.client,
+      a.order_number AS orderNumber, a.marking_method AS markingMethod,
+      a.created_at AS createdAt, g.zone_id AS zoneId, g.species, g.height, g.caliper
+      FROM inventory_allocations a
+      JOIN inventory_groups g ON g.id = a.group_id
+      ORDER BY a.id DESC`).all();
     const activities = await env.DB.prepare(
       "SELECT id, group_id AS groupId, zone_id AS zoneId, activity_type AS activityType, activity_date AS activityDate, details, performed_by AS performedBy FROM activities ORDER BY activity_date DESC, id DESC"
     ).all();
-    return Response.json({ groups: groups.results, activities: activities.results });
+    return Response.json({ groups: groups.results, allocations: allocations.results, activities: activities.results });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Unable to load inventory" }, { status: 500 });
   }
@@ -95,9 +148,18 @@ export async function POST(request: Request) {
       if (!data.zoneId || !data.species || !data.height || !data.caliper || !data.quantity || !data.plantedOn) {
         return Response.json({ error: "Complete all required inventory fields." }, { status: 400 });
       }
+      const existing = await env.DB.prepare(`SELECT id FROM inventory_groups
+        WHERE zone_id = ? AND lower(species) = lower(?) AND height = ? AND caliper = ? LIMIT 1`)
+        .bind(data.zoneId, data.species.trim(), data.height.trim(), data.caliper.trim())
+        .first<{ id: number }>();
+      if (existing) {
+        await env.DB.prepare("UPDATE inventory_groups SET quantity = quantity + ?, planted_on = MIN(planted_on, ?) WHERE id = ?")
+          .bind(data.quantity, data.plantedOn, existing.id).run();
+        return Response.json({ ok: true, id: existing.id, merged: true }, { status: 200 });
+      }
       const result = await env.DB.prepare(
-        "INSERT INTO inventory_groups (zone_id,species,height,caliper,quantity,status,client,order_number,planted_on) VALUES (?,?,?,?,?,?,?,?,?) RETURNING id"
-      ).bind(data.zoneId, data.species, data.height, data.caliper, data.quantity, data.status || "Available", data.client || "", data.orderNumber || "", data.plantedOn).first();
+        "INSERT INTO inventory_groups (zone_id,species,height,caliper,quantity,status,client,order_number,planted_on) VALUES (?,?,?,?,?,'Available','','',?) RETURNING id"
+      ).bind(data.zoneId, data.species.trim(), data.height.trim(), data.caliper.trim(), data.quantity, data.plantedOn).first();
       return Response.json({ ok: true, id: result?.id }, { status: 201 });
     }
 
@@ -111,12 +173,43 @@ export async function POST(request: Request) {
       return Response.json({ ok: true }, { status: 201 });
     }
 
-    if (data.action === "update-status") {
-      if (!data.groupId || !data.status) return Response.json({ error: "Missing status update." }, { status: 400 });
-      await env.DB.prepare(
-        "UPDATE inventory_groups SET status=?, client=?, order_number=? WHERE id=?"
-      ).bind(data.status, data.client || "", data.orderNumber || "", data.groupId).run();
-      return Response.json({ ok: true });
+    if (data.action === "add-allocation" || data.action === "update-allocation") {
+      if (!data.groupId || !data.quantity || !data.status || !["Tagged", "Sold"].includes(data.status) || !data.client) {
+        return Response.json({ error: "Enter a client, quantity, and Tagged or Sold status." }, { status: 400 });
+      }
+      const available = await availableForGroup(data.groupId, data.action === "update-allocation" ? data.allocationId : undefined);
+      if (data.quantity > available) {
+        return Response.json({ error: `Only ${available} trees are available in this group.` }, { status: 400 });
+      }
+      if (data.action === "update-allocation") {
+        if (!data.allocationId) return Response.json({ error: "Missing client allocation." }, { status: 400 });
+        await env.DB.prepare(`UPDATE inventory_allocations
+          SET quantity = ?, status = ?, client = ?, order_number = ?, marking_method = ?
+          WHERE id = ? AND group_id = ?`)
+          .bind(data.quantity, data.status, data.client.trim(), data.orderNumber || "", data.markingMethod || "", data.allocationId, data.groupId).run();
+        return Response.json({ ok: true });
+      }
+      const result = await env.DB.prepare(`INSERT INTO inventory_allocations
+        (group_id, quantity, status, client, order_number, marking_method)
+        VALUES (?, ?, ?, ?, ?, ?) RETURNING id`)
+        .bind(data.groupId, data.quantity, data.status, data.client.trim(), data.orderNumber || "", data.markingMethod || "").first();
+      return Response.json({ ok: true, id: result?.id }, { status: 201 });
+    }
+
+    if (data.action === "receive-allocation") {
+      if (!data.allocationId) return Response.json({ error: "Missing sold allocation." }, { status: 400 });
+      const allocation = await env.DB.prepare(
+        "SELECT id, group_id AS groupId, quantity, status FROM inventory_allocations WHERE id = ?"
+      ).bind(data.allocationId).first<{ id: number; groupId: number; quantity: number; status: string }>();
+      if (!allocation || allocation.status !== "Sold") {
+        return Response.json({ error: "Only sold trees can be marked received." }, { status: 400 });
+      }
+      await env.DB.batch([
+        env.DB.prepare("UPDATE inventory_groups SET quantity = quantity - ? WHERE id = ?").bind(allocation.quantity, allocation.groupId),
+        env.DB.prepare("DELETE FROM inventory_allocations WHERE id = ?").bind(allocation.id),
+        env.DB.prepare("DELETE FROM inventory_groups WHERE id = ? AND quantity <= 0").bind(allocation.groupId),
+      ]);
+      return Response.json({ ok: true, removedQuantity: allocation.quantity });
     }
 
     return Response.json({ error: "Unknown action." }, { status: 400 });

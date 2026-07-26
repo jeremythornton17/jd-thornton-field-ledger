@@ -1,4 +1,5 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const inventoryGroups = sqliteTable("inventory_groups", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -22,3 +23,18 @@ export const activities = sqliteTable("activities", {
   details: text("details").notNull().default(""),
   performedBy: text("performed_by").notNull().default(""),
 });
+
+export const inventoryAllocations = sqliteTable(
+  "inventory_allocations",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    groupId: integer("group_id").notNull(),
+    quantity: integer("quantity").notNull(),
+    status: text("status").notNull(),
+    client: text("client").notNull().default(""),
+    orderNumber: text("order_number").notNull().default(""),
+    markingMethod: text("marking_method").notNull().default(""),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("inventory_allocations_group_idx").on(table.groupId)],
+);
