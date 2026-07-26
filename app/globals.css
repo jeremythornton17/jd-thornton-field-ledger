@@ -143,6 +143,16 @@ button { cursor: pointer; }
 
 .data-card { min-height: 420px; }
 .table-tools { min-height: 58px; display: flex; align-items: center; gap: 20px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.farm-filter { min-height: 58px; display: flex; align-items: center; gap: 7px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: #f7f5ed; overflow-x: auto; }
+.farm-filter > div { min-width: 120px; margin-right: 5px; }
+.farm-filter strong, .farm-filter small { display: block; }
+.farm-filter strong { color: var(--forest); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.farm-filter small { margin-top: 3px; color: #8b928b; font-size: 8px; }
+.farm-filter button { flex: none; min-height: 32px; display: flex; align-items: center; gap: 6px; border: 1px solid #cbd1c8; border-radius: 16px; padding: 6px 10px; background: white; color: #6d776f; font-size: 9px; font-weight: 700; }
+.farm-filter button:hover { border-color: #8ea08f; background: #edf1e8; }
+.farm-filter button.active { border-color: #78907c; background: #dfe9d8; color: var(--forest-dark); }
+.filter-check { width: 12px; height: 12px; display: grid; place-items: center; border: 1px solid #aeb8ad; border-radius: 2px; font-size: 8px; }
+.farm-filter button.active .filter-check { border-color: var(--forest); background: var(--forest); color: white; }
 .search { height: 36px; flex: 1; max-width: 510px; border: 1px solid var(--line); display: flex; align-items: center; gap: 8px; padding: 0 11px; background: white; }
 .search span { font-size: 18px; color: #8e958f; }
 .search input { border: 0; outline: 0; width: 100%; font-size: 11px; }

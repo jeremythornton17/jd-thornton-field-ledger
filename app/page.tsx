@@ -361,6 +361,7 @@ export default function Home() {
   const [allocations, setAllocations] = useState<Allocation[]>(FALLBACK_ALLOCATIONS);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [view, setView] = useState<"overview" | "inventory" | "work" | "orders">("overview");
+  const [inventoryFarmCodes, setInventoryFarmCodes] = useState<string[]>(["F70"]);
   const [modal, setModal] = useState<"inventory" | "activity" | "status" | null>(null);
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
@@ -399,22 +400,34 @@ export default function Home() {
 
   const farm = farms.find((item) => item.code === farmCode) || farms[0];
   const zone = farm?.zones.find((item) => item.id === selectedZone) || farm?.zones[0];
+  const inventoryScopeGroups = groups.filter((group) => inventoryFarmCodes.some((code) => group.zoneId.startsWith(code)));
+  const inventoryScopeTotal = inventoryScopeGroups.reduce((sum, group) => sum + group.quantity, 0);
   const filteredGroups = groups.filter((group) =>
-    (view === "overview" ? group.zoneId === zone?.id : true) &&
+    (view === "overview"
+      ? group.zoneId === zone?.id
+      : view === "inventory"
+        ? inventoryFarmCodes.some((code) => group.zoneId.startsWith(code))
+        : true) &&
     `${group.zoneId} ${group.species} ${group.height} ${group.caliper}`.toLowerCase().includes(search.toLowerCase())
   );
   const filteredAllocations = allocations.filter((allocation) =>
     `${allocation.zoneId} ${allocation.species} ${allocation.height} ${allocation.caliper} ${allocation.client} ${allocation.orderNumber} ${allocation.markingMethod}`.toLowerCase().includes(search.toLowerCase())
   );
-  const totalTrees = groups.reduce((sum, group) => sum + group.quantity, 0);
-  const available = groups.reduce((sum, group) => sum + group.availableQuantity, 0);
-  const tagged = groups.reduce((sum, group) => sum + group.taggedQuantity, 0);
-  const sold = groups.reduce((sum, group) => sum + group.soldQuantity, 0);
-  const farmTotal = groups.filter((g) => g.zoneId.startsWith(farmCode)).reduce((sum, group) => sum + group.quantity, 0);
+  const farmGroups = groups.filter((group) => group.zoneId.startsWith(farmCode));
+  const totalTrees = farmGroups.reduce((sum, group) => sum + group.quantity, 0);
+  const available = farmGroups.reduce((sum, group) => sum + group.availableQuantity, 0);
+  const tagged = farmGroups.reduce((sum, group) => sum + group.taggedQuantity, 0);
+  const sold = farmGroups.reduce((sum, group) => sum + group.soldQuantity, 0);
   const pumps = useMemo(() => [...new Set(farm?.zones.map((z) => z.pump) || [])], [farm]);
+  const inventoryScopeLabel = inventoryFarmCodes.length === farms.length
+    ? "All farms"
+    : inventoryFarmCodes.length === 1
+      ? farms.find((item) => item.code === inventoryFarmCodes[0])?.name || "1 farm"
+      : `${inventoryFarmCodes.length} farms`;
   const speciesBreakdown = useMemo(() => {
     const summary = new Map<string, { species: string; height: string; caliper: string; total: number; available: number; tagged: number; sold: number }>();
-    groups.filter((group) => group.zoneId.startsWith(farmCode)).forEach((group) => {
+    const scopeCodes = view === "inventory" ? inventoryFarmCodes : [farmCode];
+    groups.filter((group) => scopeCodes.some((code) => group.zoneId.startsWith(code))).forEach((group) => {
       const key = `${group.species}|${group.height}|${group.caliper}`;
       const row = summary.get(key) || { species: group.species, height: group.height, caliper: group.caliper, total: 0, available: 0, tagged: 0, sold: 0 };
       row.total += group.quantity;
@@ -424,7 +437,7 @@ export default function Home() {
       summary.set(key, row);
     });
     return [...summary.values()].sort((a, b) => `${a.species} ${a.height} ${a.caliper}`.localeCompare(`${b.species} ${b.height} ${b.caliper}`, undefined, { numeric: true }));
-  }, [groups, farmCode]);
+  }, [groups, farmCode, inventoryFarmCodes, view]);
   const selectedGroup = groups.find((group) => group.id === activeGroup);
   const selectedAllocation = allocations.find((allocation) => allocation.id === activeAllocation);
 
@@ -432,6 +445,13 @@ export default function Home() {
     setFarmCode(code);
     const next = farms.find((item) => item.code === code);
     if (next?.zones[0]) setSelectedZone(next.zones[0].id);
+  }
+
+  function toggleInventoryFarm(code: string) {
+    setInventoryFarmCodes((current) => {
+      if (current.includes(code)) return current.length === 1 ? current : current.filter((item) => item !== code);
+      return [...current, code];
+    });
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -487,7 +507,10 @@ export default function Home() {
         <div><p className="eyebrow">JD Thornton Nurseries</p><h1>Field Ledger</h1></div>
         <nav aria-label="Primary navigation">
           {([["overview", "Farm map"], ["inventory", "Inventory"], ["work", "Work log"], ["orders", "Clients & orders"]] as const).map(([id, label]) =>
-            <button key={id} className={view === id ? "active" : ""} onClick={() => setView(id)}>{label}</button>
+            <button key={id} className={view === id ? "active" : ""} onClick={() => {
+              if (id === "inventory" && view !== "inventory") setInventoryFarmCodes([farmCode]);
+              setView(id);
+            }}>{label}</button>
           )}
         </nav>
         <div className="header-actions"><button className="icon-button" aria-label="Notifications">3</button><div className="avatar">JD</div></div>
@@ -516,14 +539,14 @@ export default function Home() {
           </div>
 
           <div className="metrics">
-            <article><span>Total trees</span><strong>{totalTrees.toLocaleString()}</strong><small>Across {groups.length} inventory groups</small></article>
+            <article><span>Total trees</span><strong>{totalTrees.toLocaleString()}</strong><small>Across {farmGroups.length} groups at {farm?.name || "this farm"}</small></article>
             <article><span>Available</span><strong>{available.toLocaleString()}</strong><small>{totalTrees ? Math.round(available / totalTrees * 100) : 0}% ready for allocation</small></article>
             <article><span>Tagged</span><strong>{tagged.toLocaleString()}</strong><small>Marked for clients</small></article>
             <article><span>Sold</span><strong>{sold.toLocaleString()}</strong><small>Awaiting customer receipt</small></article>
-            <article><span>{farm?.name || "Current farm"}</span><strong>{farmTotal.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped irrigation zones</small></article>
+            <article><span>{farm?.name || "Current farm"}</span><strong>{totalTrees.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped irrigation zones</small></article>
           </div>
           <details className="species-breakdown" open>
-            <summary><span>Inventory by species &amp; size</span><small>{farm?.name || "Current farm"} · {speciesBreakdown.length} species / size groups</small></summary>
+            <summary><span>Inventory by species &amp; size</span><small>{view === "inventory" ? inventoryScopeLabel : farm?.name || "Current farm"} · {speciesBreakdown.length} species / size groups</small></summary>
             <div className="species-grid">
               {speciesBreakdown.map((item) => (
                 <article key={`${item.species}-${item.height}-${item.caliper}`}>
@@ -583,6 +606,26 @@ export default function Home() {
                 <div className="search"><span>⌕</span><input aria-label="Search records" placeholder="Search tree ID, species, client, or order…" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
                 <div className="status-key"><span className="available">● Available</span><span className="tagged">● Tagged</span><span className="sold">● Sold</span></div>
               </div>
+              {view === "inventory" && (
+                <div className="farm-filter" aria-label="Select farms included in inventory">
+                  <div><strong>Inventory scope</strong><small>{inventoryScopeTotal.toLocaleString()} trees · {inventoryScopeLabel}</small></div>
+                  <button
+                    type="button"
+                    className={inventoryFarmCodes.length === farms.length ? "active" : ""}
+                    aria-pressed={inventoryFarmCodes.length === farms.length}
+                    onClick={() => setInventoryFarmCodes(farms.map((item) => item.code))}
+                  >All farms</button>
+                  {farms.map((item) => (
+                    <button
+                      type="button"
+                      key={item.code}
+                      className={inventoryFarmCodes.includes(item.code) ? "active" : ""}
+                      aria-pressed={inventoryFarmCodes.includes(item.code)}
+                      onClick={() => toggleInventoryFarm(item.code)}
+                    ><span className="filter-check">{inventoryFarmCodes.includes(item.code) ? "✓" : ""}</span>{item.name}</button>
+                  ))}
+                </div>
+              )}
               {view === "work" ? (
                 <div className="activity-list">
                   {activities.length ? activities.map((activity) => {
@@ -606,7 +649,7 @@ export default function Home() {
               ) : (
                 <div className="table-wrap"><table><thead><tr><th>Tree group ID</th><th>Species / size</th><th>On property</th><th>Availability</th><th>Planted</th><th /></tr></thead><tbody>
                   {filteredGroups.map((group) => <tr key={group.id}>
-                    <td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{group.zoneId}</small></td>
+                    <td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{farms.find((item) => group.zoneId.startsWith(item.code))?.name || group.zoneId} · {group.zoneId}</small></td>
                     <td><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td>
                     <td className="qty">{group.quantity}</td>
                     <td><div className="inventory-split"><span className="available">A {group.availableQuantity}</span><span className="tagged">T {group.taggedQuantity}</span><span className="sold">S {group.soldQuantity}</span></div></td>
