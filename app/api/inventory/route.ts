@@ -58,7 +58,7 @@ type GroupInput = {
 };
 
 type InventoryPayload = GroupInput & {
-  action?: "add-group" | "update-group" | "delete-group" | "add-activity" | "add-allocation" | "update-allocation" | "receive-allocation" | "bulk-add-groups";
+  action?: "add-group" | "update-group" | "delete-group" | "add-activity" | "add-allocation" | "update-allocation" | "receive-allocation" | "bulk-add-groups" | "remove-seed-data";
   client?: string;
   orderNumber?: string;
   groupId?: number;
@@ -406,6 +406,35 @@ export async function POST(request: Request) {
         env.DB.prepare("DELETE FROM inventory_allocations WHERE id = ?").bind(allocation.id),
       ]);
       return Response.json({ ok: true, removedQuantity: allocation.quantity });
+    }
+
+    if (data.action === "remove-seed-data") {
+      const seedGroups = await env.DB.prepare(`SELECT id, quantity FROM inventory_groups WHERE
+        (id = 1 AND zone_id = 'F70-FRONT-01' AND species = 'Live Oak' AND quantity = 86 AND planted_on = '2024-02-12') OR
+        (id = 2 AND zone_id = 'F70-FRONT-01' AND species = 'Bald Cypress' AND quantity = 42 AND planted_on = '2023-11-06') OR
+        (id = 3 AND zone_id = 'F70-NORTH-03' AND species = 'Mahogany' AND quantity = 28 AND planted_on = '2023-08-18') OR
+        (id = 4 AND zone_id = 'F40-WEST-05' AND species = 'Gumbo Limbo' AND quantity = 115 AND planted_on = '2025-01-20') OR
+        (id = 5 AND zone_id = 'F25-NORTH-02' AND species = 'Royal Poinciana' AND quantity = 64 AND planted_on = '2024-05-14')`).all<{ id: number; quantity: number }>();
+      if (seedGroups.results.length === 0) {
+        return Response.json({ ok: true, removedGroups: 0, removedQuantity: 0, removedAllocations: 0 });
+      }
+      if (seedGroups.results.length !== 5) {
+        return Response.json({ error: "The original seed records no longer match the expected set, so nothing was removed." }, { status: 409 });
+      }
+      const allocationCount = await env.DB.prepare(
+        "SELECT COUNT(*) AS count FROM inventory_allocations WHERE group_id IN (1,2,3,4,5)"
+      ).first<{ count: number }>();
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM inventory_allocations WHERE group_id IN (1,2,3,4,5)"),
+        env.DB.prepare("DELETE FROM activities WHERE group_id IN (1,2,3,4,5)"),
+        env.DB.prepare("DELETE FROM inventory_groups WHERE id IN (1,2,3,4,5)"),
+      ]);
+      return Response.json({
+        ok: true,
+        removedGroups: 5,
+        removedQuantity: seedGroups.results.reduce((sum, group) => sum + group.quantity, 0),
+        removedAllocations: allocationCount?.count ?? 0,
+      });
     }
 
     return Response.json({ error: "Unknown action." }, { status: 400 });
