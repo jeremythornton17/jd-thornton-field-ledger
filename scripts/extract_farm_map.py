@@ -54,6 +54,28 @@ def collect_features(folder):
     return output
 
 
+def direct_features(folder):
+    output = []
+    for placemark in folder.findall("k:Placemark", NS):
+        shape = geometry(placemark)
+        if shape:
+            output.append({"name": placemark_name(placemark), **shape})
+    return output
+
+
+def polygon_area(feature):
+    points = feature["coordinates"]
+    if feature["type"] != "polygon" or len(points) < 3:
+        return 0
+    return abs(
+        sum(
+            points[index][0] * points[(index + 1) % len(points)][1]
+            - points[(index + 1) % len(points)][0] * points[index][1]
+            for index in range(len(points))
+        )
+    ) / 2
+
+
 def feature_near_zones(feature, zones, margin_ratio=0.35):
     zone_points = [point for zone in zones for point in zone["coordinates"]]
     if not zone_points:
@@ -87,13 +109,6 @@ def main():
             farm_nodes.append(node)
             seen_farms.add(name)
 
-    road_folders = [
-        node
-        for node in root.findall(".//k:Folder", NS)
-        if folder_name(node) == "Truck Roads & Access Lanes"
-    ]
-    all_roads = collect_features(road_folders[0]) if road_folders else []
-
     for farm_node in farm_nodes:
         farm_name = folder_name(farm_node)
         acres = farm_name.split()[0]
@@ -109,17 +124,6 @@ def main():
             "infrastructure": [],
         }
 
-        for placemark in farm_node.findall("k:Placemark", NS):
-            shape = geometry(placemark)
-            if shape and shape["type"] == "polygon":
-                farm["boundary"] = shape["coordinates"]
-                break
-
-        for road in all_roads:
-            road_name = road["name"].lower()
-            if acres in road_name or (farm_code == "F70" and road["name"] == "Entry Road"):
-                farm["roads"].append(road)
-
         irrigation = next(
             (f for f in child_folders(farm_node) if folder_name(f) == "Irrigation Zones"),
             None,
@@ -134,7 +138,8 @@ def main():
                     if name_node is None or polygon is None:
                         continue
                     zone_name = (name_node.text or "").strip()
-                    numeric_zone = "".join(ch for ch in zone_name if ch.isdigit())
+                    numeric_match = re.search(r"\d+", zone_name)
+                    numeric_zone = numeric_match.group(0) if numeric_match else ""
                     zone_key = f"{int(numeric_zone):02d}" if numeric_zone else code(
                         zone_name.replace(pump_name, "").strip()
                     )
@@ -151,7 +156,11 @@ def main():
                     )
 
         pumps_folder = next(
-            (f for f in child_folders(farm_node) if folder_name(f) == "Pump Stations"),
+            (
+                f
+                for f in child_folders(farm_node)
+                if folder_name(f) in {"Pump Stations", "Irrigation Pumps"}
+            ),
             None,
         )
         if pumps_folder is not None:
@@ -166,12 +175,24 @@ def main():
                         {"name": (name_node.text or "").strip(), "coordinates": parsed[0]}
                     )
 
+        boundary_candidates = []
         for detail_folder in child_folders(farm_node):
             detail_name = folder_name(detail_folder)
             if detail_name in {"Buildings & Operational Areas", "Site Reference & Boundaries"}:
                 farm["features"].extend(collect_features(detail_folder))
             elif detail_name == "Irrigation Infrastructure":
                 farm["infrastructure"].extend(collect_features(detail_folder))
+            elif detail_name in {"Roads & Access Lanes", "Truck Roads & Access Lanes"}:
+                farm["roads"].extend(direct_features(detail_folder))
+            elif detail_name == "Property & Farm Borders":
+                boundary_candidates.extend(
+                    feature
+                    for feature in direct_features(detail_folder)
+                    if feature["type"] == "polygon"
+                )
+
+        if boundary_candidates:
+            farm["boundary"] = max(boundary_candidates, key=polygon_area)["coordinates"]
 
         farm["roads"] = [
             feature for feature in farm["roads"] if feature_near_zones(feature, farm["zones"], 0.5)

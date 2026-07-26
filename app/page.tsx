@@ -133,7 +133,13 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
       ctx.closePath();
       const selected = zone.id === selectedZone;
-      ctx.fillStyle = selected ? "#de6f39" : zone.pump.toLowerCase().includes("north") || zone.pump.toLowerCase().includes("west") ? "#a9c78e" : "#c8d7a8";
+      const pumpColor =
+        zone.pump === "South" ? "#e7b38f" :
+        zone.pump === "North" ? "#a9c78e" :
+        zone.pump === "West" ? "#b8cf9d" :
+        zone.pump === "East" ? "#9fc7bd" :
+        "#c8d7a8";
+      ctx.fillStyle = selected ? "#de6f39" : pumpColor;
       ctx.strokeStyle = selected ? "#7b321a" : "#607052";
       ctx.lineWidth = selected ? 2.5 : 1;
       ctx.fill();
@@ -177,11 +183,11 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
     shapesRef.current.forEach(({ zone, points }) => {
       const center = points.reduce((a, p) => ({ x: a.x + p.x / points.length, y: a.y + p.y / points.length }), { x: 0, y: 0 });
       const selected = zone.id === selectedZone;
-      const shortLabel = zone.name
-        .replace(`${zone.pump} `, "")
-        .replace("Loading Zone", "Loading")
-        .replace("Property Line", "Property");
-      ctx.font = selected ? "700 9px Arial" : "700 7px Arial";
+      const number = zone.name.match(/\d+/)?.[0];
+      const shortLabel = number
+        ? `${zone.pump.charAt(0).toUpperCase()}-${number.padStart(2, "0")}`
+        : zone.name.replace(`${zone.pump} `, "").slice(0, 8);
+      ctx.font = selected ? "700 9px Arial" : "700 7.5px Arial";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.lineWidth = selected ? 3 : 2;
@@ -191,10 +197,23 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       ctx.fillText(shortLabel, center.x, center.y);
     });
 
-    farm.pumps.forEach((pump) => {
+    farm.pumps.forEach((pump, index) => {
       const point = project(pump.coordinates);
       ctx.beginPath(); ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
       ctx.fillStyle = "#2e6d75"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+      const label = pump.name
+        .replace(/\s+Station$/i, "")
+        .replace(/\bDischarg\b/i, "Discharge");
+      const labelY = point.y + (index % 2 ? 18 : -18) + Math.floor(index / 2) * 10;
+      ctx.font = "700 8px Arial";
+      ctx.textAlign = point.x > width - 125 ? "right" : "left";
+      ctx.textBaseline = "middle";
+      const labelX = point.x + (ctx.textAlign === "right" ? -9 : 9);
+      const labelWidth = ctx.measureText(label).width + 8;
+      ctx.fillStyle = "rgba(255,253,248,.9)";
+      ctx.fillRect(ctx.textAlign === "right" ? labelX - labelWidth : labelX - 4, labelY - 7, labelWidth, 14);
+      ctx.fillStyle = "#214d53";
+      ctx.fillText(label, labelX, labelY);
     });
   }, [farm, selectedZone, layers]);
 
