@@ -97,6 +97,7 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
         y: height / 2 + (baseY - height / 2) * zoom,
       };
     };
+    const boundaryPoints = farm.boundary?.length ? farm.boundary.map(project) : [];
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = "#ebe7dc";
     ctx.fillRect(0, 0, width, height);
@@ -105,10 +106,9 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
     for (let x = 20; x < width; x += 38) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
     for (let y = 16; y < height; y += 38) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
 
-    if (farm.boundary?.length) {
-      const points = farm.boundary.map(project);
+    if (boundaryPoints.length) {
       ctx.beginPath();
-      points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+      boundaryPoints.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
       ctx.closePath();
       ctx.fillStyle = "rgba(255,253,248,.2)";
       ctx.strokeStyle = "#7b6a50";
@@ -144,8 +144,8 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
         x: (Math.min(...zoneXs) + Math.max(...zoneXs)) / 2,
         y: (Math.min(...zoneYs) + Math.max(...zoneYs)) / 2,
       };
-      const halfWidth = Math.max(12, (Math.max(...zoneXs) - Math.min(...zoneXs)) / 2 - 3);
-      const halfHeight = Math.max(12, (Math.max(...zoneYs) - Math.min(...zoneYs)) / 2 - 3);
+      const halfWidth = Math.max(7, (Math.max(...zoneXs) - Math.min(...zoneXs)) / 2 - 4);
+      const halfHeight = Math.max(7, (Math.max(...zoneYs) - Math.min(...zoneYs)) / 2 - 4);
       const points = [
         { x: center.x - halfWidth, y: center.y - halfHeight },
         { x: center.x + halfWidth, y: center.y - halfHeight },
@@ -154,6 +154,13 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       ];
       return { zone, points, center };
     });
+    ctx.save();
+    if (boundaryPoints.length) {
+      ctx.beginPath();
+      boundaryPoints.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+      ctx.closePath();
+      ctx.clip();
+    }
     shapesRef.current.forEach(({ zone, points }) => {
       ctx.beginPath();
       points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
@@ -171,6 +178,7 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       ctx.fill();
       ctx.stroke();
     });
+    ctx.restore();
 
     if (layers.irrigation) {
       (farm.infrastructure || []).forEach((feature) => {
@@ -204,6 +212,16 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
         ctx.stroke();
         ctx.setLineDash([]);
       });
+    }
+
+    if (boundaryPoints.length) {
+      ctx.beginPath();
+      boundaryPoints.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+      ctx.closePath();
+      ctx.strokeStyle = "#6f6049";
+      ctx.lineWidth = 2.4;
+      ctx.setLineDash([]);
+      ctx.stroke();
     }
 
     const zoneLabelBoxes: { left: number; top: number; right: number; bottom: number }[] = [];
