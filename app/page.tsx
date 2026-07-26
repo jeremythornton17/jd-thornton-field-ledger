@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -31,6 +31,7 @@ type Group = {
   height: string;
   caliper: string;
   quantity: number;
+  priceCents: number;
   availableQuantity: number;
   taggedQuantity: number;
   soldQuantity: number;
@@ -44,6 +45,7 @@ type Allocation = {
   height: string;
   caliper: string;
   quantity: number;
+  priceCents: number;
   status: "Tagged" | "Sold";
   client: string;
   orderNumber: string;
@@ -58,19 +60,96 @@ type Activity = {
   activityDate: string;
   details: string;
   performedBy: string;
+  species: string | null;
+  height: string | null;
+  caliper: string | null;
 };
 
+// A zone belongs to a farm only when its id is that farm's code, or the code
+// followed by a separator. Plain `.startsWith(code)` would also match, say,
+// zone ids under a future "F1" farm against the existing "F10" farm's zones.
+function zoneBelongsToFarm(zoneId: string, code: string) {
+  return zoneId === code || zoneId.startsWith(`${code}-`);
+}
+
+const LOW_STOCK_THRESHOLD = 10;
+
 const FALLBACK_GROUPS: Group[] = [
-  { id: 1, zoneId: "F70-FRONT-01", species: "Live Oak", height: "12–14 ft", caliper: "3.5 in", quantity: 86, availableQuantity: 86, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-02-12" },
-  { id: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, availableQuantity: 0, taggedQuantity: 42, soldQuantity: 0, plantedOn: "2023-11-06" },
-  { id: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, availableQuantity: 0, taggedQuantity: 0, soldQuantity: 28, plantedOn: "2023-08-18" },
-  { id: 4, zoneId: "F40-WEST-05", species: "Gumbo Limbo", height: "8–10 ft", caliper: "2.5 in", quantity: 115, availableQuantity: 115, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2025-01-20" },
-  { id: 5, zoneId: "F25-NORTH-02", species: "Royal Poinciana", height: "10–12 ft", caliper: "3 in", quantity: 64, availableQuantity: 64, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-05-14" },
+  { id: 1, zoneId: "F70-FRONT-01", species: "Live Oak", height: "12–14 ft", caliper: "3.5 in", quantity: 86, priceCents: 0, availableQuantity: 86, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-02-12" },
+  { id: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, priceCents: 0, availableQuantity: 0, taggedQuantity: 42, soldQuantity: 0, plantedOn: "2023-11-06" },
+  { id: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, priceCents: 0, availableQuantity: 0, taggedQuantity: 0, soldQuantity: 28, plantedOn: "2023-08-18" },
+  { id: 4, zoneId: "F40-WEST-05", species: "Gumbo Limbo", height: "8–10 ft", caliper: "2.5 in", quantity: 115, priceCents: 0, availableQuantity: 115, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2025-01-20" },
+  { id: 5, zoneId: "F25-NORTH-02", species: "Royal Poinciana", height: "10–12 ft", caliper: "3 in", quantity: 64, priceCents: 0, availableQuantity: 64, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-05-14" },
 ];
 const FALLBACK_ALLOCATIONS: Allocation[] = [
-  { id: 1, groupId: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, status: "Tagged", client: "Palm Beach Gardens", orderNumber: "SO-2408", markingMethod: "Ribbon tag", createdAt: "" },
-  { id: 2, groupId: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, status: "Sold", client: "Evergreen Landscape", orderNumber: "SO-2391", markingMethod: "Metal tag", createdAt: "" },
+  { id: 1, groupId: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, priceCents: 0, status: "Tagged", client: "Palm Beach Gardens", orderNumber: "SO-2408", markingMethod: "Ribbon tag", createdAt: "" },
+  { id: 2, groupId: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, priceCents: 0, status: "Sold", client: "Evergreen Landscape", orderNumber: "SO-2391", markingMethod: "Metal tag", createdAt: "" },
 ];
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
+}
+
+// Groups migrated before price_cents existed (or created without a price)
+// store 0 the same as a deliberately free tree. Since that's indistinguishable
+// from the data alone, treat 0 as "not priced yet" so it reads as missing
+// information instead of a $0.00 tree.
+function formatPrice(cents: number) {
+  return cents > 0 ? formatMoney(cents) : "No price set";
+}
+function priceClass(cents: number) {
+  return cents > 0 ? "" : "price-unset";
+}
+
+function csvEscape(value: string | number | undefined) {
+  const str = String(value ?? "");
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
+function toCsv(rows: Record<string, string | number | undefined>[], columns: { key: string; label: string }[]) {
+  const header = columns.map((c) => csvEscape(c.label)).join(",");
+  const lines = rows.map((row) => columns.map((c) => csvEscape(row[c.key])).join(","));
+  return [header, ...lines].join("\r\n");
+}
+// Minimal RFC 4180 parser: handles quoted fields with embedded commas,
+// escaped quotes ("") inside them, and CRLF/LF line endings.
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (inQuotes) {
+      if (char === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (char === '"') { inQuotes = false; }
+      else { field += char; }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === ",") {
+      row.push(field); field = "";
+    } else if (char === "\n" || char === "\r") {
+      if (char === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); field = "";
+      rows.push(row); row = [];
+    } else {
+      field += char;
+    }
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  return rows.filter((cells) => cells.some((cell) => cell.trim() !== ""));
+}
+
+function downloadCsv(filename: string, content: string) {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
 
 type MapLayers = { roads: boolean; operations: boolean; irrigation: boolean };
 
@@ -363,13 +442,17 @@ export default function Home() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [view, setView] = useState<"overview" | "inventory" | "work" | "orders">("overview");
   const [inventoryFarmCodes, setInventoryFarmCodes] = useState<string[]>(["F70"]);
-  const [modal, setModal] = useState<"inventory" | "activity" | "status" | null>(null);
+  const [modal, setModal] = useState<"inventory" | "edit-group" | "activity" | "status" | null>(null);
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeGroup, setActiveGroup] = useState<number>(1);
   const [activeAllocation, setActiveAllocation] = useState<number | null>(null);
   const [layers, setLayers] = useState<MapLayers>({ roads: true, operations: true, irrigation: true });
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoMissing, setPhotoMissing] = useState(false);
+  const [photoVersion, setPhotoVersion] = useState(0);
 
   const loadInventory = async () => {
     try {
@@ -405,24 +488,27 @@ export default function Home() {
   const farm = farms.find((item) => item.code === farmCode) || farms[0];
   const isHandWatered = farm?.wateringMethod === "Hand Watered";
   const zone = farm?.zones.find((item) => item.id === selectedZone) || farm?.zones[0];
-  const inventoryScopeGroups = groups.filter((group) => inventoryFarmCodes.some((code) => group.zoneId.startsWith(code)));
+  const inventoryScopeGroups = groups.filter((group) => inventoryFarmCodes.some((code) => zoneBelongsToFarm(group.zoneId, code)));
   const inventoryScopeTotal = inventoryScopeGroups.reduce((sum, group) => sum + group.quantity, 0);
+  const soldOutGroups = inventoryScopeGroups.filter((group) => group.availableQuantity === 0);
+  const lowStockGroups = inventoryScopeGroups.filter((group) => group.availableQuantity > 0 && group.availableQuantity <= LOW_STOCK_THRESHOLD);
   const filteredGroups = groups.filter((group) =>
     (view === "overview"
       ? group.zoneId === zone?.id
       : view === "inventory"
-        ? inventoryFarmCodes.some((code) => group.zoneId.startsWith(code))
+        ? inventoryFarmCodes.some((code) => zoneBelongsToFarm(group.zoneId, code))
         : true) &&
     `${group.zoneId} ${group.species} ${group.height} ${group.caliper}`.toLowerCase().includes(search.toLowerCase())
   );
   const filteredAllocations = allocations.filter((allocation) =>
     `${allocation.zoneId} ${allocation.species} ${allocation.height} ${allocation.caliper} ${allocation.client} ${allocation.orderNumber} ${allocation.markingMethod}`.toLowerCase().includes(search.toLowerCase())
   );
-  const farmGroups = groups.filter((group) => group.zoneId.startsWith(farmCode));
+  const farmGroups = groups.filter((group) => zoneBelongsToFarm(group.zoneId, farmCode));
   const totalTrees = farmGroups.reduce((sum, group) => sum + group.quantity, 0);
   const available = farmGroups.reduce((sum, group) => sum + group.availableQuantity, 0);
   const tagged = farmGroups.reduce((sum, group) => sum + group.taggedQuantity, 0);
   const sold = farmGroups.reduce((sum, group) => sum + group.soldQuantity, 0);
+  const inventoryValue = farmGroups.reduce((sum, group) => sum + group.quantity * group.priceCents, 0);
   const pumps = useMemo(() => [...new Set(farm?.zones.map((z) => z.pump) || [])], [farm]);
   const inventoryScopeLabel = inventoryFarmCodes.length === farms.length
     ? "All farms"
@@ -430,21 +516,35 @@ export default function Home() {
       ? farms.find((item) => item.code === inventoryFarmCodes[0])?.name || "1 farm"
       : `${inventoryFarmCodes.length} farms`;
   const speciesBreakdown = useMemo(() => {
-    const summary = new Map<string, { species: string; height: string; caliper: string; total: number; available: number; tagged: number; sold: number }>();
+    type SizeSummary = { height: string; caliper: string; minPriceCents: number; maxPriceCents: number; total: number; available: number; tagged: number; sold: number };
+    type SpeciesSummary = { species: string; sizes: Map<string, SizeSummary> };
+    const summary = new Map<string, SpeciesSummary>();
     const scopeCodes = view === "inventory" ? inventoryFarmCodes : [farmCode];
-    groups.filter((group) => scopeCodes.some((code) => group.zoneId.startsWith(code))).forEach((group) => {
-      const key = `${group.species}|${group.height}|${group.caliper}`;
-      const row = summary.get(key) || { species: group.species, height: group.height, caliper: group.caliper, total: 0, available: 0, tagged: 0, sold: 0 };
-      row.total += group.quantity;
-      row.available += group.availableQuantity;
-      row.tagged += group.taggedQuantity;
-      row.sold += group.soldQuantity;
-      summary.set(key, row);
+    groups.filter((group) => scopeCodes.some((code) => zoneBelongsToFarm(group.zoneId, code))).forEach((group) => {
+      const speciesKey = group.species.trim().toLocaleLowerCase();
+      const sizeKey = `${group.height.trim().toLocaleLowerCase()}|${group.caliper.trim().toLocaleLowerCase()}`;
+      const species = summary.get(speciesKey) || { species: group.species.trim(), sizes: new Map<string, SizeSummary>() };
+      const size = species.sizes.get(sizeKey) || { height: group.height.trim(), caliper: group.caliper.trim(), minPriceCents: group.priceCents, maxPriceCents: group.priceCents, total: 0, available: 0, tagged: 0, sold: 0 };
+      size.minPriceCents = Math.min(size.minPriceCents, group.priceCents);
+      size.maxPriceCents = Math.max(size.maxPriceCents, group.priceCents);
+      size.total += group.quantity;
+      size.available += group.availableQuantity;
+      size.tagged += group.taggedQuantity;
+      size.sold += group.soldQuantity;
+      species.sizes.set(sizeKey, size);
+      summary.set(speciesKey, species);
     });
-    return [...summary.values()].sort((a, b) => `${a.species} ${a.height} ${a.caliper}`.localeCompare(`${b.species} ${b.height} ${b.caliper}`, undefined, { numeric: true }));
+    return [...summary.values()]
+      .map((item) => ({
+        species: item.species,
+        sizes: [...item.sizes.values()].sort((a, b) => `${a.height} ${a.caliper}`.localeCompare(`${b.height} ${b.caliper}`, undefined, { numeric: true })),
+      }))
+      .sort((a, b) => a.species.localeCompare(b.species));
   }, [groups, farmCode, inventoryFarmCodes, view]);
+  const speciesSizeGroupCount = speciesBreakdown.reduce((sum, item) => sum + item.sizes.length, 0);
   const selectedGroup = groups.find((group) => group.id === activeGroup);
   const selectedAllocation = allocations.find((allocation) => allocation.id === activeAllocation);
+  const selectedGroupCommitted = (selectedGroup?.taggedQuantity || 0) + (selectedGroup?.soldQuantity || 0);
 
   function changeFarm(code: string) {
     setFarmCode(code);
@@ -464,14 +564,18 @@ export default function Home() {
     setBusy(true);
     const form = new FormData(event.currentTarget);
     const payload: Record<string, unknown> = Object.fromEntries(form.entries());
-    if (modal === "inventory" || modal === "status") payload.quantity = Number(payload.quantity);
-    if (modal === "activity" || modal === "status") payload.groupId = Number(payload.groupId);
+    if (modal === "inventory" || modal === "edit-group" || modal === "status") payload.quantity = Number(payload.quantity);
+    if (modal === "inventory" || modal === "edit-group") {
+      payload.priceCents = Math.round(Number(payload.price) * 100);
+      delete payload.price;
+    }
+    if (modal === "edit-group" || modal === "activity" || modal === "status") payload.groupId = Number(payload.groupId);
     if (modal === "status" && payload.allocationId) payload.allocationId = Number(payload.allocationId);
     try {
       const response = await fetch("/api/inventory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       if (!response.ok) throw new Error((await response.json()).error);
       await loadInventory();
-      setNotice(modal === "inventory" ? "Tree group added to inventory." : modal === "activity" ? "Milestone recorded." : "Client allocation saved.");
+      setNotice(modal === "inventory" ? "Tree group added to inventory." : modal === "edit-group" ? "Inventory group updated." : modal === "activity" ? "Milestone recorded." : "Client allocation saved.");
       setModal(null);
       setActiveAllocation(null);
     } catch (error) {
@@ -500,6 +604,176 @@ export default function Home() {
       setActiveAllocation(null);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to complete the delivery.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteGroup(group: Group) {
+    const confirmed = window.confirm(
+      `Delete the entire ${group.quantity}-tree ${group.species} group from ${group.zoneId}? This permanently removes the group and its work history.`
+    );
+    if (!confirmed) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/inventory", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "delete-group", groupId: group.id, confirmGroupId: group.id }),
+      });
+      if (!response.ok) throw new Error((await response.json()).error);
+      await loadInventory();
+      setNotice(`${group.quantity} ${group.species} trees and their group record were deleted.`);
+      setModal(null);
+      setActiveAllocation(null);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to delete the inventory group.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function uploadPhoto(groupId: number, file: File) {
+    setBusy(true);
+    try {
+      const form = new FormData();
+      form.append("groupId", String(groupId));
+      form.append("file", file);
+      const response = await fetch("/api/inventory/photo", { method: "POST", body: form });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      setPhotoMissing(false);
+      setPhotoVersion((v) => v + 1);
+      setNotice("Photo updated.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to upload the photo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removePhoto(groupId: number) {
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/inventory/photo?groupId=${groupId}`, { method: "DELETE" });
+      if (!response.ok) throw new Error((await response.json()).error);
+      setPhotoMissing(true);
+      setPhotoVersion((v) => v + 1);
+      setNotice("Photo removed.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to remove the photo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function exportCsv() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (view === "inventory") {
+      const rows = filteredGroups.map((group) => ({
+        zoneId: group.zoneId,
+        species: group.species,
+        height: group.height,
+        caliper: group.caliper,
+        quantity: group.quantity,
+        priceEach: (group.priceCents / 100).toFixed(2),
+        available: group.availableQuantity,
+        tagged: group.taggedQuantity,
+        sold: group.soldQuantity,
+        plantedOn: group.plantedOn,
+      }));
+      downloadCsv(`inventory-${today}.csv`, toCsv(rows, [
+        { key: "zoneId", label: "Zone" }, { key: "species", label: "Species" }, { key: "height", label: "Height" },
+        { key: "caliper", label: "Caliper" }, { key: "quantity", label: "Quantity" }, { key: "priceEach", label: "Price Each" },
+        { key: "available", label: "Available" }, { key: "tagged", label: "Tagged" }, { key: "sold", label: "Sold" },
+        { key: "plantedOn", label: "Planted On" },
+      ]));
+    } else if (view === "orders") {
+      const rows = filteredAllocations.map((allocation) => ({
+        id: allocation.id,
+        zoneId: allocation.zoneId,
+        species: allocation.species,
+        height: allocation.height,
+        caliper: allocation.caliper,
+        quantity: allocation.quantity,
+        priceEach: (allocation.priceCents / 100).toFixed(2),
+        status: allocation.status,
+        client: allocation.client,
+        orderNumber: allocation.orderNumber,
+        markingMethod: allocation.markingMethod,
+        createdAt: allocation.createdAt,
+      }));
+      downloadCsv(`orders-${today}.csv`, toCsv(rows, [
+        { key: "id", label: "Allocation ID" }, { key: "zoneId", label: "Zone" }, { key: "species", label: "Species" },
+        { key: "height", label: "Height" }, { key: "caliper", label: "Caliper" }, { key: "quantity", label: "Quantity" },
+        { key: "priceEach", label: "Price Each" }, { key: "status", label: "Status" }, { key: "client", label: "Client" },
+        { key: "orderNumber", label: "Order Number" }, { key: "markingMethod", label: "Marked With" }, { key: "createdAt", label: "Created At" },
+      ]));
+    } else if (view === "work") {
+      const rows = activities.map((activity) => ({
+        id: activity.id,
+        activityDate: activity.activityDate,
+        activityType: activity.activityType,
+        zoneId: activity.zoneId,
+        species: activity.species ?? "",
+        height: activity.height ?? "",
+        caliper: activity.caliper ?? "",
+        details: activity.details,
+        performedBy: activity.performedBy,
+      }));
+      downloadCsv(`work-log-${today}.csv`, toCsv(rows, [
+        { key: "id", label: "ID" }, { key: "activityDate", label: "Date" }, { key: "activityType", label: "Activity" },
+        { key: "zoneId", label: "Zone" }, { key: "species", label: "Species" }, { key: "height", label: "Height" },
+        { key: "caliper", label: "Caliper" }, { key: "details", label: "Details" }, { key: "performedBy", label: "Performed By" },
+      ]));
+    }
+  }
+
+  async function importCsv(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const table = parseCsv(await file.text());
+    if (table.length < 2) {
+      setNotice("The CSV file has no data rows.");
+      return;
+    }
+    const header = table[0].map((cell) => cell.trim().toLowerCase());
+    const columnIndex = (name: string) => header.indexOf(name);
+    const columns = {
+      zoneId: columnIndex("zone"), species: columnIndex("species"), height: columnIndex("height"),
+      caliper: columnIndex("caliper"), quantity: columnIndex("quantity"), price: columnIndex("price each"),
+      plantedOn: columnIndex("planted on"),
+    };
+    if (Object.values(columns).some((index) => index === -1)) {
+      setNotice("CSV must include Zone, Species, Height, Caliper, Quantity, Price Each, and Planted On columns.");
+      return;
+    }
+    const rows = table.slice(1).map((cells) => ({
+      zoneId: cells[columns.zoneId]?.trim(),
+      species: cells[columns.species]?.trim(),
+      height: cells[columns.height]?.trim(),
+      caliper: cells[columns.caliper]?.trim(),
+      quantity: Number(cells[columns.quantity]),
+      priceCents: Math.round(Number(cells[columns.price]) * 100),
+      plantedOn: cells[columns.plantedOn]?.trim(),
+    }));
+    setBusy(true);
+    try {
+      const response = await fetch("/api/inventory", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "bulk-add-groups", rows }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      await loadInventory();
+      const parts = [`${result.created} new group${result.created === 1 ? "" : "s"} added`];
+      if (result.merged) parts.push(`${result.merged} merged into existing groups`);
+      if (result.errors.length) parts.push(`${result.errors.length} row${result.errors.length === 1 ? "" : "s"} failed (row ${result.errors[0].row}: ${result.errors[0].error})`);
+      setNotice(`Import finished: ${parts.join(", ")}.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to import the CSV file.");
     } finally {
       setBusy(false);
     }
@@ -548,22 +822,46 @@ export default function Home() {
             <article><span>Available</span><strong>{available.toLocaleString()}</strong><small>{totalTrees ? Math.round(available / totalTrees * 100) : 0}% ready for allocation</small></article>
             <article><span>Tagged</span><strong>{tagged.toLocaleString()}</strong><small>Marked for clients</small></article>
             <article><span>Sold</span><strong>{sold.toLocaleString()}</strong><small>Awaiting customer receipt</small></article>
-            <article><span>{farm?.name || "Current farm"}</span><strong>{totalTrees.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped {isHandWatered ? "hand-watered" : "irrigation"} zones</small></article>
+            <article><span>Inventory value</span><strong>{formatMoney(inventoryValue)}</strong><small>{farm?.name || "Current farm"} · On-property value</small></article>
           </div>
-          <details className="species-breakdown" open>
-            <summary><span>Inventory by species &amp; size</span><small>{view === "inventory" ? inventoryScopeLabel : farm?.name || "Current farm"} · {speciesBreakdown.length} species / size groups</small></summary>
-            <div className="species-grid">
-              {speciesBreakdown.map((item) => (
-                <article key={`${item.species}-${item.height}-${item.caliper}`}>
-                  <div><strong>{item.species}</strong><small>{item.height} · {item.caliper}</small></div>
-                  <b>{item.total}</b>
-                  <span className="available">A {item.available}</span>
-                  <span className="tagged">T {item.tagged}</span>
-                  <span className="sold">S {item.sold}</span>
-                </article>
-              ))}
+          {view === "inventory" && (soldOutGroups.length > 0 || lowStockGroups.length > 0) && (
+            <div className="stock-alerts">
+              {soldOutGroups.length > 0 && (
+                <div className="stock-alert sold-out">
+                  <span className="stock-alert-icon">●</span>
+                  <span><strong>{soldOutGroups.length} group{soldOutGroups.length === 1 ? "" : "s"} sold out</strong> — {soldOutGroups.map((group) => `${group.species} (${group.height}, ${group.zoneId})`).join(", ")}</span>
+                </div>
+              )}
+              {lowStockGroups.length > 0 && (
+                <div className="stock-alert low-stock">
+                  <span className="stock-alert-icon">●</span>
+                  <span><strong>{lowStockGroups.length} group{lowStockGroups.length === 1 ? "" : "s"} low on stock</strong> (≤{LOW_STOCK_THRESHOLD} available) — {lowStockGroups.map((group) => `${group.species} (${group.availableQuantity} left, ${group.zoneId})`).join(", ")}</span>
+                </div>
+              )}
             </div>
-          </details>
+          )}
+          {view === "inventory" && <details className="species-breakdown" open>
+            <summary><span>Inventory by species &amp; size</span><small>{view === "inventory" ? inventoryScopeLabel : farm?.name || "Current farm"} · {speciesBreakdown.length} species · {speciesSizeGroupCount} size groups</small></summary>
+            <div className="species-columns">
+              {speciesBreakdown.map((item) => (
+                <section className="species-column" key={item.species}>
+                  <header><strong>{item.species}</strong><small>{item.sizes.length} {item.sizes.length === 1 ? "size" : "sizes"}</small></header>
+                  <div className="species-column-head"><span>Size</span><span>Price</span><span>Total</span><span>Available</span><span>Tagged</span><span>Sold</span></div>
+                  {item.sizes.map((size) => (
+                    <div className="species-size-row" key={`${item.species}-${size.height}-${size.caliper}`}>
+                      <div><strong>{size.height}</strong><small>{size.caliper}</small></div>
+                      <span className={`size-price ${size.minPriceCents === size.maxPriceCents ? priceClass(size.minPriceCents) : ""}`}>{size.minPriceCents === size.maxPriceCents ? formatPrice(size.minPriceCents) : `${formatMoney(size.minPriceCents)}–${formatMoney(size.maxPriceCents)}`}</span>
+                      <b>{size.total.toLocaleString()}</b>
+                      <span className="available">{size.available.toLocaleString()}</span>
+                      <span className="tagged">{size.tagged.toLocaleString()}</span>
+                      <span className="sold">{size.sold.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </section>
+              ))}
+              {!speciesBreakdown.length && <div className="species-empty">No inventory in the current farm scope.</div>}
+            </div>
+          </details>}
 
           {view === "overview" && farm && zone && (
             <div className="overview-grid">
@@ -595,7 +893,7 @@ export default function Home() {
                   {filteredGroups.length ? filteredGroups.map((group) => (
                     <button key={group.id} onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>
                       <span className={`status-dot ${group.soldQuantity ? "sold" : group.taggedQuantity ? "tagged" : "available"}`} />
-                      <span><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small><small className="quantity-split">A {group.availableQuantity} · T {group.taggedQuantity} · S {group.soldQuantity}</small></span>
+                      <span><strong>{group.species}</strong><small>{group.height} · {group.caliper} · <span className={priceClass(group.priceCents)}>{formatPrice(group.priceCents)}</span>{group.priceCents > 0 ? " each" : ""}</small><small className="quantity-split">A {group.availableQuantity} · T {group.taggedQuantity} · S {group.soldQuantity}</small></span>
                       <b>{group.quantity}</b>
                     </button>
                   )) : <div className="empty">No inventory recorded in this zone yet.</div>}
@@ -610,6 +908,11 @@ export default function Home() {
               <div className="table-tools">
                 <div className="search"><span>⌕</span><input aria-label="Search records" placeholder="Search tree ID, species, client, or order…" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
                 <div className="status-key"><span className="available">● Available</span><span className="tagged">● Tagged</span><span className="sold">● Sold</span></div>
+                {view === "inventory" && <>
+                  <input ref={importInputRef} type="file" accept=".csv,text/csv" onChange={importCsv} style={{ display: "none" }} />
+                  <button type="button" className="secondary" disabled={busy} onClick={() => importInputRef.current?.click()}>Import CSV</button>
+                </>}
+                <button type="button" className="secondary" onClick={exportCsv}>Export CSV</button>
               </div>
               {view === "inventory" && (
                 <div className="farm-filter" aria-label="Select farms included in inventory">
@@ -633,33 +936,34 @@ export default function Home() {
               )}
               {view === "work" ? (
                 <div className="activity-list">
-                  {activities.length ? activities.map((activity) => {
-                    const group = groups.find((g) => g.id === activity.groupId);
-                    return <article key={activity.id}><div className="date-block"><b>{new Date(`${activity.activityDate}T12:00:00`).toLocaleDateString("en-US", { month: "short" })}</b><strong>{activity.activityDate.slice(-2)}</strong></div><div><span className="activity-type">{activity.activityType}</span><h3>{group?.species || "Tree group"} · {activity.zoneId}</h3><p>{activity.details || "Field work completed."}</p><small>Recorded by {activity.performedBy || "Farm team"}</small></div></article>;
-                  }) : <div className="empty-state"><strong>No field work recorded yet</strong><span>Use “Record work” to add a milestone for any inventory group.</span></div>}
+                  {activities.length ? activities.map((activity) => (
+                    <article key={activity.id}><div className="date-block"><b>{new Date(`${activity.activityDate}T12:00:00`).toLocaleDateString("en-US", { month: "short" })}</b><strong>{activity.activityDate.slice(-2)}</strong></div><div><span className="activity-type">{activity.activityType}</span><h3>{activity.species || "Tree group"} · {activity.zoneId}</h3><p>{activity.details || "Field work completed."}</p><small>Recorded by {activity.performedBy || "Farm team"}</small></div></article>
+                  )) : <div className="empty-state"><strong>No field work recorded yet</strong><span>Use “Record work” to add a milestone for any inventory group.</span></div>}
                 </div>
               ) : view === "orders" ? (
-                <div className="table-wrap"><table><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Status</th><th>Client / order</th><th>Marked With</th><th /></tr></thead><tbody>
+                <div className="table-wrap"><table><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Price</th><th>Status</th><th>Client / order</th><th>Marked With</th><th /></tr></thead><tbody>
                   {filteredAllocations.map((allocation) => <tr key={allocation.id}>
                     <td><strong>{allocation.zoneId}-{String(allocation.groupId).padStart(3, "0")}</strong><small>Allocation #{allocation.id}</small></td>
                     <td><strong>{allocation.species}</strong><small>{allocation.height} · {allocation.caliper}</small></td>
                     <td className="qty">{allocation.quantity}</td>
+                    <td className="price-cell"><strong className={priceClass(allocation.priceCents)}>{formatPrice(allocation.priceCents)}</strong>{allocation.priceCents > 0 && <small>{formatMoney(allocation.priceCents * allocation.quantity)} total</small>}</td>
                     <td><span className={`badge ${allocation.status.toLowerCase()}`}>{allocation.status}</span></td>
                     <td><strong>{allocation.client}</strong><small>{allocation.orderNumber || "No order assigned"}</small></td>
                     <td>{allocation.markingMethod || "Not specified"}</td>
                     <td><button className="more" aria-label={`Edit ${allocation.species} allocation`} onClick={() => { setActiveGroup(allocation.groupId); setActiveAllocation(allocation.id); setModal("status"); }}>•••</button></td>
                   </tr>)}
-                  {!filteredAllocations.length && <tr><td colSpan={7}><div className="empty">No client allocations match this search.</div></td></tr>}
+                  {!filteredAllocations.length && <tr><td colSpan={8}><div className="empty">No client allocations match this search.</div></td></tr>}
                 </tbody></table></div>
               ) : (
-                <div className="table-wrap"><table><thead><tr><th>Tree group ID</th><th>Species / size</th><th>On property</th><th>Availability</th><th>Planted</th><th /></tr></thead><tbody>
+                <div className="table-wrap"><table><thead><tr><th>Tree group ID</th><th>Species / size</th><th>Price</th><th>On property</th><th>Availability</th><th>Planted</th><th>Actions</th></tr></thead><tbody>
                   {filteredGroups.map((group) => <tr key={group.id}>
-                    <td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{farms.find((item) => group.zoneId.startsWith(item.code))?.name || group.zoneId} · {group.zoneId}</small></td>
+                    <td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{farms.find((item) => zoneBelongsToFarm(group.zoneId, item.code))?.name || group.zoneId} · {group.zoneId}</small></td>
                     <td><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td>
+                    <td className="price-cell"><strong className={priceClass(group.priceCents)}>{formatPrice(group.priceCents)}</strong>{group.priceCents > 0 && <small>per tree</small>}</td>
                     <td className="qty">{group.quantity}</td>
                     <td><div className="inventory-split"><span className="available">A {group.availableQuantity}</span><span className="tagged">T {group.taggedQuantity}</span><span className="sold">S {group.soldQuantity}</span></div></td>
                     <td>{/^\d{4}-\d{2}-\d{2}$/.test(group.plantedOn) ? new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString() : "Not recorded"}</td>
-                    <td><button className="more" aria-label={`Allocate ${group.species}`} onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>•••</button></td>
+                    <td><div className="record-actions"><button className="table-action" onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setPhotoMissing(false); setModal("edit-group"); }}>Edit</button><button className="table-action" onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>Allocate</button></div></td>
                   </tr>)}
                 </tbody></table></div>
               )}
@@ -670,15 +974,58 @@ export default function Home() {
       </section>
 
       {modal && <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.currentTarget === e.target) { setModal(null); setActiveAllocation(null); } }}><div className="modal" role="dialog" aria-modal="true">
-        <div className="modal-head"><div><span>{modal === "inventory" ? "NEW INVENTORY GROUP" : modal === "activity" ? "FIELD ACTIVITY" : "CLIENT & ORDER"}</span><h3>{modal === "inventory" ? "Add trees to a zone" : modal === "activity" ? "Record a milestone" : selectedAllocation ? "Edit client allocation" : "Allocate trees"}</h3></div><button onClick={() => { setModal(null); setActiveAllocation(null); }} aria-label="Close">×</button></div>
+        <div className="modal-head"><div><span>{modal === "inventory" ? "NEW INVENTORY GROUP" : modal === "edit-group" ? "EDIT INVENTORY GROUP" : modal === "activity" ? "FIELD ACTIVITY" : "CLIENT & ORDER"}</span><h3>{modal === "inventory" ? "Add trees to a zone" : modal === "edit-group" ? "Update trees and zone" : modal === "activity" ? "Record a milestone" : selectedAllocation ? "Edit client allocation" : "Allocate trees"}</h3></div><button onClick={() => { setModal(null); setActiveAllocation(null); }} aria-label="Close">×</button></div>
         <form onSubmit={submit}>
           {modal === "inventory" && <>
             <input type="hidden" name="action" value="add-group" />
             <label className="full">Farm / Watering / Zone<select name="zoneId" defaultValue={zone?.id}>{farms.flatMap((f) => f.zones).map((z) => <option key={z.id} value={z.id}>{z.id} · {z.name}</option>)}</select></label>
             <label className="full">Species<input name="species" required placeholder="e.g. Live Oak" /></label>
             <label>Height<input name="height" required placeholder="12–14 ft" /></label><label>Caliper<input name="caliper" required placeholder="3.5 in" /></label>
-            <label>Quantity<input name="quantity" type="number" min="1" required placeholder="50" /></label><label>Planting date<input name="plantedOn" type="date" required /></label>
+            <label>Quantity<input name="quantity" type="number" min="1" required placeholder="50" /></label><label>Price per tree<input name="price" type="number" min="0" step="0.01" required placeholder="0.00" /></label>
+            <label className="full">Planting date<input name="plantedOn" type="date" required /></label>
             <input type="hidden" name="status" value="Available" />
+          </>}
+          {modal === "edit-group" && selectedGroup && <>
+            <input type="hidden" name="action" value="update-group" />
+            <input type="hidden" name="groupId" value={selectedGroup.id} />
+            <label className="full">Farm / Watering / Zone<select name="zoneId" required defaultValue={selectedGroup.zoneId}>{farms.flatMap((f) => f.zones).map((z) => <option key={z.id} value={z.id}>{z.id} · {z.name}</option>)}</select></label>
+            <label className="full">Species<input name="species" required maxLength={120} defaultValue={selectedGroup.species} /></label>
+            <label>Height<input name="height" required maxLength={40} defaultValue={selectedGroup.height} /></label><label>Caliper<input name="caliper" required maxLength={40} defaultValue={selectedGroup.caliper} /></label>
+            <label>Quantity<input name="quantity" type="number" min={selectedGroup.taggedQuantity + selectedGroup.soldQuantity || 1} required defaultValue={selectedGroup.quantity} /><small>Cannot be lower than {selectedGroup.taggedQuantity + selectedGroup.soldQuantity} tagged or sold.</small></label><label>Price per tree<input name="price" type="number" min="0" step="0.01" required defaultValue={(selectedGroup.priceCents / 100).toFixed(2)} /></label>
+            <label>Planting date (optional)<input name="plantedOn" type="date" defaultValue={/^\d{4}-\d{2}-\d{2}$/.test(selectedGroup.plantedOn) ? selectedGroup.plantedOn : ""} /></label>
+            <div className="photo-panel full">
+              <div className="photo-preview">
+                {photoMissing
+                  ? <span className="photo-empty">No photo yet</span>
+                  : <img
+                      key={`${selectedGroup.id}-${photoVersion}`}
+                      src={`/api/inventory/photo?groupId=${selectedGroup.id}&v=${photoVersion}`}
+                      alt={`${selectedGroup.species} field photo`}
+                      onError={() => setPhotoMissing(true)}
+                    />}
+              </div>
+              <div className="photo-actions">
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  style={{ display: "none" }}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) uploadPhoto(selectedGroup.id, file);
+                  }}
+                />
+                <button type="button" className="table-action" disabled={busy} onClick={() => photoInputRef.current?.click()}>{photoMissing ? "Add photo" : "Replace photo"}</button>
+                {!photoMissing && <button type="button" className="table-action" disabled={busy} onClick={() => removePhoto(selectedGroup.id)}>Remove</button>}
+              </div>
+            </div>
+            <div className="delete-group-panel full">
+              {selectedGroupCommitted > 0
+                ? <div><strong>Delete entire group</strong><span>{selectedGroupCommitted} tree{selectedGroupCommitted === 1 ? "" : "s"} in this group are tagged or sold. Resolve those allocations, or mark sold trees received, before deleting.</span></div>
+                : <div><strong>Delete entire group</strong><span>Also removes its work history.</span></div>}
+              <button type="button" className="danger" disabled={busy || selectedGroupCommitted > 0} onClick={() => deleteGroup(selectedGroup)}>Delete group</button>
+            </div>
           </>}
           {modal === "activity" && <>
             <input type="hidden" name="action" value="add-activity" />
@@ -696,7 +1043,7 @@ export default function Home() {
             <div className="selected-record full">
               <span>{selectedGroup?.zoneId}-{String(activeGroup).padStart(3, "0")}</span>
               <strong>{selectedGroup?.species}</strong>
-              <small>{selectedGroup?.height} · {selectedGroup?.caliper} · {selectedGroup?.availableQuantity || 0} currently available</small>
+              <small>{selectedGroup?.height} · {selectedGroup?.caliper} · <span className={priceClass(selectedGroup?.priceCents || 0)}>{formatPrice(selectedGroup?.priceCents || 0)}</span>{(selectedGroup?.priceCents || 0) > 0 ? " each" : ""} · {selectedGroup?.availableQuantity || 0} currently available</small>
             </div>
             <label>Availability status<select name="status" defaultValue={selectedAllocation?.status || "Tagged"}><option>Tagged</option><option>Sold</option></select></label>
             <label>Quantity<input name="quantity" type="number" min="1" max={(selectedGroup?.availableQuantity || 0) + (selectedAllocation?.quantity || 0)} required defaultValue={selectedAllocation?.quantity || 1} /></label>
