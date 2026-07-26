@@ -24,6 +24,35 @@ def coords(text):
     return points
 
 
+def geometry(placemark):
+    polygon = placemark.find(".//k:Polygon//k:coordinates", NS)
+    if polygon is not None:
+        return {"type": "polygon", "coordinates": coords(polygon.text)}
+    line = placemark.find(".//k:LineString/k:coordinates", NS)
+    if line is not None:
+        return {"type": "line", "coordinates": coords(line.text)}
+    point = placemark.find(".//k:Point/k:coordinates", NS)
+    if point is not None:
+        parsed = coords(point.text)
+        if parsed:
+            return {"type": "point", "coordinates": parsed}
+    return None
+
+
+def placemark_name(placemark):
+    node = placemark.find("k:name", NS)
+    return (node.text or "").strip() if node is not None else ""
+
+
+def collect_features(folder):
+    output = []
+    for placemark in folder.findall(".//k:Placemark", NS):
+        shape = geometry(placemark)
+        if shape:
+            output.append({"name": placemark_name(placemark), **shape})
+    return output
+
+
 def code(value):
     return "".join(ch for ch in value.upper() if ch.isalnum())
 
@@ -33,17 +62,46 @@ def main():
     target = Path(sys.argv[2])
     root = ET.parse(source).getroot()
     farms = []
-    farm_nodes = [
+    farm_nodes = []
+    seen_farms = set()
+    for node in root.findall(".//k:Folder", NS):
+        name = folder_name(node)
+        if name.endswith("Acre Farm") and name not in seen_farms:
+            farm_nodes.append(node)
+            seen_farms.add(name)
+
+    road_folders = [
         node
         for node in root.findall(".//k:Folder", NS)
-        if folder_name(node).endswith("Acre Farm")
+        if folder_name(node) == "Truck Roads & Access Lanes"
     ]
+    all_roads = collect_features(road_folders[0]) if road_folders else []
 
     for farm_node in farm_nodes:
         farm_name = folder_name(farm_node)
         acres = farm_name.split()[0]
         farm_code = f"F{acres}"
-        farm = {"name": farm_name, "code": farm_code, "zones": [], "pumps": []}
+        farm = {
+            "name": farm_name,
+            "code": farm_code,
+            "zones": [],
+            "pumps": [],
+            "boundary": [],
+            "roads": [],
+            "features": [],
+            "infrastructure": [],
+        }
+
+        for placemark in farm_node.findall("k:Placemark", NS):
+            shape = geometry(placemark)
+            if shape and shape["type"] == "polygon":
+                farm["boundary"] = shape["coordinates"]
+                break
+
+        for road in all_roads:
+            road_name = road["name"].lower()
+            if acres in road_name or (farm_code == "F70" and road["name"] == "Entry Road"):
+                farm["roads"].append(road)
 
         irrigation = next(
             (f for f in child_folders(farm_node) if folder_name(f) == "Irrigation Zones"),
@@ -94,13 +152,23 @@ def main():
                     farm["pumps"].append(
                         {"name": (name_node.text or "").strip(), "coordinates": parsed[0]}
                     )
+
+        for detail_folder in child_folders(farm_node):
+            detail_name = folder_name(detail_folder)
+            if detail_name in {"Buildings & Operational Areas", "Site Reference & Boundaries"}:
+                farm["features"].extend(collect_features(detail_folder))
+            elif detail_name == "Irrigation Infrastructure":
+                farm["infrastructure"].extend(collect_features(detail_folder))
         farms.append(farm)
 
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps({"farms": farms}, separators=(",", ":")), encoding="utf-8")
     print(
         f"Wrote {len(farms)} farms, {sum(len(f['zones']) for f in farms)} zones, "
-        f"{sum(len(f['pumps']) for f in farms)} pumps to {target}"
+        f"{sum(len(f['pumps']) for f in farms)} pumps, "
+        f"{sum(len(f['roads']) for f in farms)} roads, "
+        f"{sum(len(f['features']) for f in farms)} operational features, and "
+        f"{sum(len(f['infrastructure']) for f in farms)} infrastructure features to {target}"
     )
 
 

@@ -12,7 +12,17 @@ type Zone = {
   id: string;
   coordinates: [number, number][];
 };
-type Farm = { name: string; code: string; zones: Zone[]; pumps: { name: string; coordinates: [number, number] }[] };
+type MapFeature = { name: string; type: "polygon" | "line" | "point"; coordinates: [number, number][] };
+type Farm = {
+  name: string;
+  code: string;
+  zones: Zone[];
+  pumps: { name: string; coordinates: [number, number] }[];
+  boundary: [number, number][];
+  roads: MapFeature[];
+  features: MapFeature[];
+  infrastructure: MapFeature[];
+};
 type Group = {
   id: number;
   zoneId: string;
@@ -43,7 +53,9 @@ const FALLBACK_GROUPS: Group[] = [
   { id: 5, zoneId: "F25-NORTH-02", species: "Royal Poinciana", height: "10–12 ft", caliper: "3 in", quantity: 64, status: "Available", client: "", orderNumber: "", plantedOn: "2024-05-14" },
 ];
 
-function FarmCanvas({ farm, selectedZone, onSelect }: { farm: Farm; selectedZone: string; onSelect: (zone: Zone) => void }) {
+type MapLayers = { roads: boolean; operations: boolean; irrigation: boolean };
+
+function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; selectedZone: string; layers: MapLayers; onSelect: (zone: Zone) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shapesRef = useRef<{ zone: Zone; points: { x: number; y: number }[] }[]>([]);
 
@@ -58,7 +70,13 @@ function FarmCanvas({ farm, selectedZone, onSelect }: { farm: Farm; selectedZone
     canvas.width = width * ratio;
     canvas.height = height * ratio;
     ctx.scale(ratio, ratio);
-    const all = farm.zones.flatMap((z) => z.coordinates);
+    const detailCoordinates = [
+      ...(farm.boundary || []),
+      ...(farm.roads || []).flatMap((item) => item.coordinates),
+      ...(farm.features || []).flatMap((item) => item.coordinates),
+      ...(farm.infrastructure || []).flatMap((item) => item.coordinates),
+    ];
+    const all = [...farm.zones.flatMap((z) => z.coordinates), ...detailCoordinates];
     const xs = all.map((p) => p[0]);
     const ys = all.map((p) => p[1]);
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
@@ -72,6 +90,37 @@ function FarmCanvas({ farm, selectedZone, onSelect }: { farm: Farm; selectedZone
     ctx.lineWidth = 1;
     for (let x = 20; x < width; x += 38) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
     for (let y = 16; y < height; y += 38) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+
+    if (farm.boundary?.length) {
+      const points = farm.boundary.map(project);
+      ctx.beginPath();
+      points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+      ctx.closePath();
+      ctx.fillStyle = "rgba(255,253,248,.2)";
+      ctx.strokeStyle = "#7b6a50";
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    if (layers.operations) {
+      (farm.features || []).forEach((feature) => {
+        const points = feature.coordinates.map(project);
+        if (feature.type === "point") {
+          ctx.fillStyle = "#72583d";
+          ctx.fillRect(points[0].x - 3, points[0].y - 3, 6, 6);
+          return;
+        }
+        ctx.beginPath();
+        points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+        if (feature.type === "polygon") ctx.closePath();
+        ctx.fillStyle = "rgba(129,107,75,.28)";
+        ctx.strokeStyle = "#7a674e";
+        ctx.lineWidth = 1.4;
+        if (feature.type === "polygon") ctx.fill();
+        ctx.stroke();
+      });
+    }
 
     shapesRef.current = farm.zones.map((zone) => ({ zone, points: zone.coordinates.map(project) }));
     shapesRef.current.forEach(({ zone, points }) => {
@@ -92,12 +141,47 @@ function FarmCanvas({ farm, selectedZone, onSelect }: { farm: Farm; selectedZone
         ctx.fillText(zone.id, center.x, center.y + 4);
       }
     });
+
+    if (layers.irrigation) {
+      (farm.infrastructure || []).forEach((feature) => {
+        const points = feature.coordinates.map(project);
+        if (feature.type === "point") {
+          ctx.beginPath();
+          ctx.arc(points[0].x, points[0].y, feature.name.toLowerCase().includes("valve") ? 2.4 : 1.4, 0, Math.PI * 2);
+          ctx.fillStyle = feature.name.toLowerCase().includes("valve") ? "#225f68" : "rgba(47,112,118,.55)";
+          ctx.fill();
+          return;
+        }
+        ctx.beginPath();
+        points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+        ctx.strokeStyle = feature.name.toLowerCase().includes("main") ? "#1f6672" : "rgba(47,112,118,.48)";
+        ctx.lineWidth = feature.name.toLowerCase().includes("main") ? 2.3 : .8;
+        ctx.stroke();
+      });
+    }
+
+    if (layers.roads) {
+      (farm.roads || []).forEach((road) => {
+        const points = road.coordinates.map(project);
+        ctx.beginPath();
+        points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+        if (road.type === "polygon") ctx.closePath();
+        ctx.strokeStyle = "#a46b3f";
+        ctx.fillStyle = "rgba(201,139,76,.28)";
+        ctx.lineWidth = road.type === "line" ? 4 : 1.6;
+        ctx.setLineDash(road.type === "line" ? [8, 5] : []);
+        if (road.type === "polygon") ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+
     farm.pumps.forEach((pump) => {
       const point = project(pump.coordinates);
       ctx.beginPath(); ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
       ctx.fillStyle = "#2e6d75"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
     });
-  }, [farm, selectedZone]);
+  }, [farm, selectedZone, layers]);
 
   function click(event: React.MouseEvent<HTMLCanvasElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -127,6 +211,7 @@ export default function Home() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeGroup, setActiveGroup] = useState<number>(1);
+  const [layers, setLayers] = useState<MapLayers>({ roads: true, operations: true, irrigation: true });
 
   const loadInventory = async () => {
     try {
@@ -209,7 +294,7 @@ export default function Home() {
           </div>
           <div className="side-heading pump-heading"><span>Irrigation</span></div>
           {pumps.map((pump) => <div className="pump-row" key={pump}><span className="pump-dot" /><span>{pump} Pump</span><b>{farm?.zones.filter((z) => z.pump === pump).length}</b></div>)}
-          <div className="sync-card"><span className="sync-icon">↻</span><div><strong>Map source linked</strong><small>Farm geometry imported from KML</small></div></div>
+          <div className="sync-card"><span className="sync-icon">↻</span><div><strong>Detailed map linked</strong><small>{farm ? `${farm.roads.length} roads · ${farm.features.length} sites · ${farm.infrastructure.length} irrigation features` : "Loading farm layers"}</small></div></div>
         </aside>
 
         <div className="content">
@@ -228,8 +313,13 @@ export default function Home() {
           {view === "overview" && farm && zone && (
             <div className="overview-grid">
               <section className="map-card">
-                <div className="card-head"><div><span className="live-dot" />LIVE FARM MAP</div><div className="legend"><span><i className="legend-zone" />Irrigation zone</span><span><i className="legend-pump" />Pump</span></div></div>
-                <FarmCanvas farm={farm} selectedZone={zone.id} onSelect={(next) => setSelectedZone(next.id)} />
+                <div className="card-head"><div><span className="live-dot" />LIVE FARM MAP</div><div className="legend"><span><i className="legend-zone" />Zone</span><span><i className="legend-pump" />Pump</span><span><i className="legend-road" />Road</span><span><i className="legend-line" />Irrigation</span></div></div>
+                <div className="layer-controls" aria-label="Map layers">
+                  {([["roads", "Roads"], ["operations", "Operations"], ["irrigation", "Irrigation detail"]] as const).map(([key, label]) =>
+                    <button key={key} className={layers[key] ? "enabled" : ""} onClick={() => setLayers((current) => ({ ...current, [key]: !current[key] }))}><span />{label}</button>
+                  )}
+                </div>
+                <FarmCanvas farm={farm} selectedZone={zone.id} layers={layers} onSelect={(next) => setSelectedZone(next.id)} />
                 <div className="map-footer"><span>Click a zone to inspect its trees</span><strong>{zone.id}</strong></div>
               </section>
               <section className="zone-panel">

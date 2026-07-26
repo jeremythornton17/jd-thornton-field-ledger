@@ -88,6 +88,13 @@ button { cursor: pointer; }
 .legend i { display: inline-block; width: 10px; height: 8px; }
 .legend-zone { background: #b7cf9c; border: 1px solid #677a59; }
 .legend-pump { background: var(--teal); border-radius: 50%; }
+.legend-road { height: 3px !important; background: #a46b3f; }
+.legend-line { height: 2px !important; background: #2f7076; }
+.layer-controls { min-height: 39px; display: flex; align-items: center; gap: 7px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: #f7f5ed; }
+.layer-controls button { border: 1px solid #d1d5cd; background: #fffdf8; color: #7b827c; padding: 5px 8px; border-radius: 12px; font-size: 8px; font-weight: 700; }
+.layer-controls button span { display: inline-block; width: 5px; height: 5px; margin-right: 5px; border-radius: 50%; background: #b2b6b0; }
+.layer-controls button.enabled { color: var(--forest); border-color: #9eae9f; background: #e3eadc; }
+.layer-controls button.enabled span { background: var(--teal); }
 .farm-canvas { display: block; width: 100%; height: 428px; cursor: crosshair; }
 .map-footer { display: flex; justify-content: space-between; align-items: center; min-height: 35px; padding: 0 15px; border-top: 1px solid var(--line); color: #8a918a; font-size: 9px; }
 .map-footer strong { color: var(--orange); letter-spacing: .08em; }
