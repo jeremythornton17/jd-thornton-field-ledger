@@ -64,6 +64,9 @@ type Activity = {
   height: string | null;
   caliper: string | null;
 };
+type ConfirmationAction =
+  | { kind: "receive"; allocation: Allocation }
+  | { kind: "delete"; group: Group };
 
 // A zone belongs to a farm only when its id is that farm's code, or the code
 // followed by a separator. Plain `.startsWith(code)` would also match, say,
@@ -454,6 +457,7 @@ export default function Home() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [photoMissing, setPhotoMissing] = useState(false);
   const [photoVersion, setPhotoVersion] = useState(0);
+  const [confirmation, setConfirmation] = useState<ConfirmationAction | null>(null);
 
   const loadInventory = async () => {
     try {
@@ -486,6 +490,15 @@ export default function Home() {
       .catch(() => setNotice("Prototype data is active; hosted records will sync when the database is available."));
   }, []);
 
+  useEffect(() => {
+    if (!confirmation) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) setConfirmation(null);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [confirmation, busy]);
+
   const farm = farms.find((item) => item.code === farmCode) || farms[0];
   const isHandWatered = farm?.wateringMethod === "Hand Watered";
   const zone = farm?.zones.find((item) => item.id === selectedZone) || farm?.zones[0];
@@ -504,6 +517,16 @@ export default function Home() {
   const filteredAllocations = allocations.filter((allocation) =>
     `${allocation.zoneId} ${allocation.species} ${allocation.height} ${allocation.caliper} ${allocation.client} ${allocation.orderNumber} ${allocation.markingMethod}`.toLowerCase().includes(search.toLowerCase())
   );
+  const filteredActivities = activities.filter((activity) =>
+    `${activity.activityDate} ${activity.activityType} ${activity.zoneId} ${activity.species || ""} ${activity.height || ""} ${activity.caliper || ""} ${activity.details} ${activity.performedBy}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+  const searchPlaceholder = view === "work"
+    ? "Search activity, tree, zone, notes, or crew…"
+    : view === "orders"
+      ? "Search client, order, tree, or zone…"
+      : "Search tree ID, species, size, or zone…";
   const farmGroups = groups.filter((group) => zoneBelongsToFarm(group.zoneId, farmCode));
   const totalTrees = farmGroups.reduce((sum, group) => sum + group.quantity, 0);
   const available = farmGroups.reduce((sum, group) => sum + group.availableQuantity, 0);
@@ -596,49 +619,32 @@ export default function Home() {
     }
   }
 
-  async function receiveAllocation(allocation: Allocation) {
-    const confirmed = window.confirm(
-      `Are you sure ${allocation.quantity} ${allocation.species} trees were received by ${allocation.client}? This will permanently remove them from on-property inventory.`
-    );
-    if (!confirmed) return;
+  async function confirmDestructiveAction() {
+    if (!confirmation) return;
+    const action = confirmation;
     setBusy(true);
     try {
       const response = await fetch("/api/inventory", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "receive-allocation", allocationId: allocation.id }),
+        body: JSON.stringify(action.kind === "receive"
+          ? { action: "receive-allocation", allocationId: action.allocation.id }
+          : { action: "delete-group", groupId: action.group.id, confirmGroupId: action.group.id }),
       });
       if (!response.ok) throw new Error((await response.json()).error);
       await loadInventory();
-      setNotice(`${allocation.quantity} ${allocation.species} trees were marked received and removed from on-property inventory.`);
+      setNotice(action.kind === "receive"
+        ? `${action.allocation.quantity} ${action.allocation.species} trees were marked received and removed from on-property inventory.`
+        : `${action.group.quantity} ${action.group.species} trees and their group record were deleted.`);
+      setConfirmation(null);
       setModal(null);
       setActiveAllocation(null);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to complete the delivery.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function deleteGroup(group: Group) {
-    const confirmed = window.confirm(
-      `Delete the entire ${group.quantity}-tree ${group.species} group from ${group.zoneId}? This permanently removes the group and its work history.`
-    );
-    if (!confirmed) return;
-    setBusy(true);
-    try {
-      const response = await fetch("/api/inventory", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "delete-group", groupId: group.id, confirmGroupId: group.id }),
-      });
-      if (!response.ok) throw new Error((await response.json()).error);
-      await loadInventory();
-      setNotice(`${group.quantity} ${group.species} trees and their group record were deleted.`);
-      setModal(null);
-      setActiveAllocation(null);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to delete the inventory group.");
+      setNotice(error instanceof Error
+        ? error.message
+        : action.kind === "receive"
+          ? "Unable to complete the delivery."
+          : "Unable to delete the inventory group.");
     } finally {
       setBusy(false);
     }
@@ -721,7 +727,7 @@ export default function Home() {
         { key: "orderNumber", label: "Order Number" }, { key: "markingMethod", label: "Marked With" }, { key: "createdAt", label: "Created At" },
       ]));
     } else if (view === "work") {
-      const rows = activities.map((activity) => ({
+      const rows = filteredActivities.map((activity) => ({
         id: activity.id,
         activityDate: activity.activityDate,
         activityType: activity.activityType,
@@ -872,22 +878,22 @@ export default function Home() {
                       <details className="species-row" key={item.species}>
                         <summary>
                           <span className="species-name"><strong>{item.species}</strong><small>View size breakdown</small></span>
-                          <span>{item.sizes.length}</span>
-                          <b>{item.total.toLocaleString()}</b>
-                          <span className="available">{item.available.toLocaleString()}</span>
-                          <span className="tagged">{item.tagged.toLocaleString()}</span>
-                          <span className="sold">{item.sold.toLocaleString()}</span>
+                          <span data-label="Sizes">{item.sizes.length}</span>
+                          <b data-label="Total">{item.total.toLocaleString()}</b>
+                          <span className="available" data-label="Available">{item.available.toLocaleString()}</span>
+                          <span className="tagged" data-label="Tagged">{item.tagged.toLocaleString()}</span>
+                          <span className="sold" data-label="Sold">{item.sold.toLocaleString()}</span>
                         </summary>
                         <div className="species-size-detail">
                           <div className="species-size-head"><span>Size</span><span>Price</span><span>Total</span><span>Available</span><span>Tagged</span><span>Sold</span></div>
                           {item.sizes.map((size) => (
                             <div className="species-size-row" key={`${item.species}-${size.height}-${size.caliper}`}>
                               <div><strong>{size.height}</strong><small>{size.caliper}</small></div>
-                              <span className={`size-price ${size.minPriceCents === size.maxPriceCents ? priceClass(size.minPriceCents) : ""}`}>{size.minPriceCents === size.maxPriceCents ? formatPrice(size.minPriceCents) : `${formatMoney(size.minPriceCents)}–${formatMoney(size.maxPriceCents)}`}</span>
-                              <b>{size.total.toLocaleString()}</b>
-                              <span className="available">{size.available.toLocaleString()}</span>
-                              <span className="tagged">{size.tagged.toLocaleString()}</span>
-                              <span className="sold">{size.sold.toLocaleString()}</span>
+                              <span className={`size-price ${size.minPriceCents === size.maxPriceCents ? priceClass(size.minPriceCents) : ""}`} data-label="Price">{size.minPriceCents === size.maxPriceCents ? formatPrice(size.minPriceCents) : `${formatMoney(size.minPriceCents)}–${formatMoney(size.maxPriceCents)}`}</span>
+                              <b data-label="Total">{size.total.toLocaleString()}</b>
+                              <span className="available" data-label="Available">{size.available.toLocaleString()}</span>
+                              <span className="tagged" data-label="Tagged">{size.tagged.toLocaleString()}</span>
+                              <span className="sold" data-label="Sold">{size.sold.toLocaleString()}</span>
                             </div>
                           ))}
                         </div>
@@ -943,8 +949,13 @@ export default function Home() {
           {view !== "overview" && (
             <section className="data-card">
               <div className="table-tools">
-                <div className="search"><span>⌕</span><input aria-label="Search records" placeholder="Search tree ID, species, client, or order…" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-                <div className="status-key"><span className="available">● Available</span><span className="tagged">● Tagged</span><span className="sold">● Sold</span></div>
+                <div className="search">
+                  <span aria-hidden="true">⌕</span>
+                  <input aria-label={`Search ${view}`} placeholder={searchPlaceholder} value={search} onChange={(e) => setSearch(e.target.value)} />
+                  {search && <button type="button" className="search-clear" aria-label="Clear search" onClick={() => setSearch("")}>×</button>}
+                </div>
+                {view === "inventory" && <div className="status-key"><span className="available">● Available</span><span className="tagged">● Tagged</span><span className="sold">● Sold</span></div>}
+                {view === "orders" && <div className="status-key"><span className="tagged">● Tagged</span><span className="sold">● Sold</span></div>}
                 {view === "inventory" && <>
                   <input ref={importInputRef} type="file" accept=".csv,text/csv" onChange={importCsv} style={{ display: "none" }} />
                   <button type="button" className="secondary" disabled={busy} onClick={() => importInputRef.current?.click()}>Import CSV</button>
@@ -973,34 +984,34 @@ export default function Home() {
               )}
               {view === "work" ? (
                 <div className="activity-list">
-                  {activities.length ? activities.map((activity) => (
+                  {filteredActivities.length ? filteredActivities.map((activity) => (
                     <article key={activity.id}><div className="date-block"><b>{new Date(`${activity.activityDate}T12:00:00`).toLocaleDateString("en-US", { month: "short" })}</b><strong>{activity.activityDate.slice(-2)}</strong></div><div><span className="activity-type">{activity.activityType}</span><h3>{activity.species || "Tree group"} · {activity.zoneId}</h3><p>{activity.details || "Field work completed."}</p><small>Recorded by {activity.performedBy || "Farm team"}</small></div></article>
-                  )) : <div className="empty-state"><strong>No field work recorded yet</strong><span>Use “Record work” to add a milestone for any inventory group.</span></div>}
+                  )) : <div className="empty-state"><strong>{search ? "No work records match this search" : "No field work recorded yet"}</strong><span>{search ? `Try a different activity, tree, zone, note, or crew name.` : "Use “Record work” to add a milestone for any inventory group."}</span></div>}
                 </div>
               ) : view === "orders" ? (
-                <div className="table-wrap"><table><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Price</th><th>Status</th><th>Client / order</th><th>Marked With</th><th /></tr></thead><tbody>
+                <div className="table-wrap"><table className="record-table"><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Price</th><th>Status</th><th>Client / order</th><th>Marked With</th><th /></tr></thead><tbody>
                   {filteredAllocations.map((allocation) => <tr key={allocation.id}>
-                    <td><strong>{allocation.zoneId}-{String(allocation.groupId).padStart(3, "0")}</strong><small>Allocation #{allocation.id}</small></td>
-                    <td><strong>{allocation.species}</strong><small>{allocation.height} · {allocation.caliper}</small></td>
-                    <td className="qty">{allocation.quantity}</td>
-                    <td className="price-cell"><strong className={priceClass(allocation.priceCents)}>{formatPrice(allocation.priceCents)}</strong>{allocation.priceCents > 0 && <small>{formatMoney(allocation.priceCents * allocation.quantity)} total</small>}</td>
-                    <td><span className={`badge ${allocation.status.toLowerCase()}`}>{allocation.status}</span></td>
-                    <td><strong>{allocation.client}</strong><small>{allocation.orderNumber || "No order assigned"}</small></td>
-                    <td>{allocation.markingMethod || "Not specified"}</td>
-                    <td><button className="more" aria-label={`Edit ${allocation.species} allocation`} onClick={() => { setActiveGroup(allocation.groupId); setActiveAllocation(allocation.id); setModal("status"); }}>•••</button></td>
+                    <td data-label="Allocation"><strong>{allocation.zoneId}-{String(allocation.groupId).padStart(3, "0")}</strong><small>Allocation #{allocation.id}</small></td>
+                    <td data-label="Species / size"><strong>{allocation.species}</strong><small>{allocation.height} · {allocation.caliper}</small></td>
+                    <td className="qty" data-label="Quantity">{allocation.quantity}</td>
+                    <td className="price-cell" data-label="Price"><strong className={priceClass(allocation.priceCents)}>{formatPrice(allocation.priceCents)}</strong>{allocation.priceCents > 0 && <small>{formatMoney(allocation.priceCents * allocation.quantity)} total</small>}</td>
+                    <td data-label="Status"><span className={`badge ${allocation.status.toLowerCase()}`}>{allocation.status}</span></td>
+                    <td data-label="Client / order"><strong>{allocation.client}</strong><small>{allocation.orderNumber || "No order assigned"}</small></td>
+                    <td data-label="Marked With">{allocation.markingMethod || "Not specified"}</td>
+                    <td data-label="Actions"><button className="more" aria-label={`Edit ${allocation.species} allocation`} onClick={() => { setActiveGroup(allocation.groupId); setActiveAllocation(allocation.id); setModal("status"); }}>•••</button></td>
                   </tr>)}
-                  {!filteredAllocations.length && <tr><td colSpan={8}><div className="empty">No client allocations match this search.</div></td></tr>}
+                  {!filteredAllocations.length && <tr><td className="table-empty-cell" colSpan={8}><div className="empty">No client allocations match this search.</div></td></tr>}
                 </tbody></table></div>
               ) : (
-                <div className="table-wrap"><table><thead><tr><th>Tree group ID</th><th>Species / size</th><th>Price</th><th>On property</th><th>Availability</th><th>Planted</th><th>Actions</th></tr></thead><tbody>
+                <div className="table-wrap"><table className="record-table"><thead><tr><th>Tree group ID</th><th>Species / size</th><th>Price</th><th>On property</th><th>Availability</th><th>Planted</th><th>Actions</th></tr></thead><tbody>
                   {filteredGroups.map((group) => <tr key={group.id}>
-                    <td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{farms.find((item) => zoneBelongsToFarm(group.zoneId, item.code))?.name || group.zoneId} · {group.zoneId}</small></td>
-                    <td><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td>
-                    <td className="price-cell"><strong className={priceClass(group.priceCents)}>{formatPrice(group.priceCents)}</strong>{group.priceCents > 0 && <small>per tree</small>}</td>
-                    <td className="qty">{group.quantity}</td>
-                    <td><div className="inventory-split"><span className="available">A {group.availableQuantity}</span><span className="tagged">T {group.taggedQuantity}</span><span className="sold">S {group.soldQuantity}</span></div></td>
-                    <td>{/^\d{4}-\d{2}-\d{2}$/.test(group.plantedOn) ? new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString() : "Not recorded"}</td>
-                    <td><div className="record-actions"><button className="table-action" onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setPhotoMissing(false); setModal("edit-group"); }}>Edit</button><button className="table-action" onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>Allocate</button></div></td>
+                    <td data-label="Tree group"><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{farms.find((item) => zoneBelongsToFarm(group.zoneId, item.code))?.name || group.zoneId} · {group.zoneId}</small></td>
+                    <td data-label="Species / size"><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td>
+                    <td className="price-cell" data-label="Price"><strong className={priceClass(group.priceCents)}>{formatPrice(group.priceCents)}</strong>{group.priceCents > 0 && <small>per tree</small>}</td>
+                    <td className="qty" data-label="On property">{group.quantity}</td>
+                    <td data-label="Availability"><div className="inventory-split"><span className="available">A {group.availableQuantity}</span><span className="tagged">T {group.taggedQuantity}</span><span className="sold">S {group.soldQuantity}</span></div></td>
+                    <td data-label="Planted">{/^\d{4}-\d{2}-\d{2}$/.test(group.plantedOn) ? new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString() : "Not recorded"}</td>
+                    <td data-label="Actions"><div className="record-actions"><button className="table-action" onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setPhotoMissing(false); setModal("edit-group"); }}>Edit</button><button className="table-action" onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>Allocate</button></div></td>
                   </tr>)}
                 </tbody></table></div>
               )}
@@ -1061,7 +1072,7 @@ export default function Home() {
               {selectedGroupCommitted > 0
                 ? <div><strong>Delete entire group</strong><span>{selectedGroupCommitted} tree{selectedGroupCommitted === 1 ? "" : "s"} in this group are tagged or sold. Resolve those allocations, or mark sold trees received, before deleting.</span></div>
                 : <div><strong>Delete entire group</strong><span>Also removes its work history.</span></div>}
-              <button type="button" className="danger" disabled={busy || selectedGroupCommitted > 0} onClick={() => deleteGroup(selectedGroup)}>Delete group</button>
+              <button type="button" className="danger" disabled={busy || selectedGroupCommitted > 0} onClick={() => setConfirmation({ kind: "delete", group: selectedGroup })}>Delete group</button>
             </div>
           </>}
           {modal === "activity" && <>
@@ -1087,11 +1098,66 @@ export default function Home() {
             <label className="full">Client<input name="client" required defaultValue={selectedAllocation?.client || ""} placeholder="Client or project name" /></label>
             <label>Sales order<input name="orderNumber" defaultValue={selectedAllocation?.orderNumber || ""} placeholder="SO-0000" /></label>
             <label>Marked With<input name="markingMethod" defaultValue={selectedAllocation?.markingMethod || ""} placeholder="Orange tape around the trunk" /></label>
-            {selectedAllocation?.status === "Sold" && <div className="receive-panel full"><span>Remove these trees after delivery or pickup is complete.</span><button type="button" className="danger" disabled={busy} onClick={() => receiveAllocation(selectedAllocation)}>Received by Customer</button></div>}
+            {selectedAllocation?.status === "Sold" && <div className="receive-panel full"><span>Remove these trees after delivery or pickup is complete.</span><button type="button" className="danger" disabled={busy} onClick={() => setConfirmation({ kind: "receive", allocation: selectedAllocation })}>Received by Customer</button></div>}
           </>}
           <div className="form-actions full"><button type="button" className="secondary" onClick={() => { setModal(null); setActiveAllocation(null); }}>Cancel</button><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save record"}</button></div>
         </form>
       </div></div>}
+
+      {confirmation && (
+        <div
+          className="confirmation-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target && !busy) setConfirmation(null);
+          }}
+        >
+          <section
+            className="confirmation-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirmation-title"
+            aria-describedby="confirmation-warning"
+          >
+            <header>
+              <span>{confirmation.kind === "receive" ? "CONFIRM CUSTOMER RECEIPT" : "DELETE INVENTORY GROUP"}</span>
+              <h3 id="confirmation-title">{confirmation.kind === "receive" ? "Remove these trees from the property?" : "Permanently delete this tree group?"}</h3>
+            </header>
+            {confirmation.kind === "receive" ? (
+              <div className="confirmation-context">
+                <strong>{confirmation.allocation.quantity} {confirmation.allocation.species}</strong>
+                <small>{confirmation.allocation.height} · {confirmation.allocation.caliper} · {confirmation.allocation.zoneId}</small>
+                <dl>
+                  <div><dt>Customer</dt><dd>{confirmation.allocation.client}</dd></div>
+                  <div><dt>Order</dt><dd>{confirmation.allocation.orderNumber || "No order assigned"}</dd></div>
+                  <div><dt>Inventory removed</dt><dd>{confirmation.allocation.quantity} trees</dd></div>
+                </dl>
+              </div>
+            ) : (
+              <div className="confirmation-context">
+                <strong>{confirmation.group.quantity} {confirmation.group.species}</strong>
+                <small>{confirmation.group.height} · {confirmation.group.caliper}</small>
+                <dl>
+                  <div><dt>Zone</dt><dd>{confirmation.group.zoneId}</dd></div>
+                  <div><dt>Group ID</dt><dd>{confirmation.group.zoneId}-{String(confirmation.group.id).padStart(3, "0")}</dd></div>
+                  <div><dt>Inventory removed</dt><dd>{confirmation.group.quantity} trees</dd></div>
+                </dl>
+              </div>
+            )}
+            <p className="confirmation-warning" id="confirmation-warning">
+              {confirmation.kind === "receive"
+                ? "This confirms delivery or pickup and permanently removes these sold trees from on-property inventory."
+                : "This permanently removes the group, its photo, and its work history. This action cannot be undone."}
+            </p>
+            <div className="confirmation-actions">
+              <button type="button" className="secondary" disabled={busy} onClick={() => setConfirmation(null)}>Cancel</button>
+              <button type="button" className="danger" disabled={busy} onClick={confirmDestructiveAction}>
+                {busy ? "Working…" : confirmation.kind === "receive" ? "Confirm receipt" : "Delete group"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
