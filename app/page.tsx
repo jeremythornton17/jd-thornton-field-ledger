@@ -363,7 +363,7 @@ export default function Home() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [view, setView] = useState<"overview" | "inventory" | "work" | "orders">("overview");
   const [inventoryFarmCodes, setInventoryFarmCodes] = useState<string[]>(["F70"]);
-  const [modal, setModal] = useState<"inventory" | "activity" | "status" | null>(null);
+  const [modal, setModal] = useState<"inventory" | "edit-group" | "activity" | "status" | null>(null);
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -464,14 +464,14 @@ export default function Home() {
     setBusy(true);
     const form = new FormData(event.currentTarget);
     const payload: Record<string, unknown> = Object.fromEntries(form.entries());
-    if (modal === "inventory" || modal === "status") payload.quantity = Number(payload.quantity);
-    if (modal === "activity" || modal === "status") payload.groupId = Number(payload.groupId);
+    if (modal === "inventory" || modal === "edit-group" || modal === "status") payload.quantity = Number(payload.quantity);
+    if (modal === "edit-group" || modal === "activity" || modal === "status") payload.groupId = Number(payload.groupId);
     if (modal === "status" && payload.allocationId) payload.allocationId = Number(payload.allocationId);
     try {
       const response = await fetch("/api/inventory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       if (!response.ok) throw new Error((await response.json()).error);
       await loadInventory();
-      setNotice(modal === "inventory" ? "Tree group added to inventory." : modal === "activity" ? "Milestone recorded." : "Client allocation saved.");
+      setNotice(modal === "inventory" ? "Tree group added to inventory." : modal === "edit-group" ? "Inventory group updated." : modal === "activity" ? "Milestone recorded." : "Client allocation saved.");
       setModal(null);
       setActiveAllocation(null);
     } catch (error) {
@@ -500,6 +500,30 @@ export default function Home() {
       setActiveAllocation(null);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to complete the delivery.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteGroup(group: Group) {
+    const confirmed = window.confirm(
+      `Delete the entire ${group.quantity}-tree ${group.species} group from ${group.zoneId}? This permanently removes the group, its client allocations, and its work history.`
+    );
+    if (!confirmed) return;
+    setBusy(true);
+    try {
+      const response = await fetch("/api/inventory", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "delete-group", groupId: group.id, confirmGroupId: group.id }),
+      });
+      if (!response.ok) throw new Error((await response.json()).error);
+      await loadInventory();
+      setNotice(`${group.quantity} ${group.species} trees and their group record were deleted.`);
+      setModal(null);
+      setActiveAllocation(null);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to delete the inventory group.");
     } finally {
       setBusy(false);
     }
@@ -652,14 +676,14 @@ export default function Home() {
                   {!filteredAllocations.length && <tr><td colSpan={7}><div className="empty">No client allocations match this search.</div></td></tr>}
                 </tbody></table></div>
               ) : (
-                <div className="table-wrap"><table><thead><tr><th>Tree group ID</th><th>Species / size</th><th>On property</th><th>Availability</th><th>Planted</th><th /></tr></thead><tbody>
+                <div className="table-wrap"><table><thead><tr><th>Tree group ID</th><th>Species / size</th><th>On property</th><th>Availability</th><th>Planted</th><th>Actions</th></tr></thead><tbody>
                   {filteredGroups.map((group) => <tr key={group.id}>
                     <td><strong>{group.zoneId}-{String(group.id).padStart(3, "0")}</strong><small>{farms.find((item) => group.zoneId.startsWith(item.code))?.name || group.zoneId} · {group.zoneId}</small></td>
                     <td><strong>{group.species}</strong><small>{group.height} · {group.caliper}</small></td>
                     <td className="qty">{group.quantity}</td>
                     <td><div className="inventory-split"><span className="available">A {group.availableQuantity}</span><span className="tagged">T {group.taggedQuantity}</span><span className="sold">S {group.soldQuantity}</span></div></td>
                     <td>{/^\d{4}-\d{2}-\d{2}$/.test(group.plantedOn) ? new Date(`${group.plantedOn}T12:00:00`).toLocaleDateString() : "Not recorded"}</td>
-                    <td><button className="more" aria-label={`Allocate ${group.species}`} onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>•••</button></td>
+                    <td><div className="record-actions"><button className="table-action" onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("edit-group"); }}>Edit</button><button className="table-action" onClick={() => { setActiveGroup(group.id); setActiveAllocation(null); setModal("status"); }}>Allocate</button></div></td>
                   </tr>)}
                 </tbody></table></div>
               )}
@@ -670,7 +694,7 @@ export default function Home() {
       </section>
 
       {modal && <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.currentTarget === e.target) { setModal(null); setActiveAllocation(null); } }}><div className="modal" role="dialog" aria-modal="true">
-        <div className="modal-head"><div><span>{modal === "inventory" ? "NEW INVENTORY GROUP" : modal === "activity" ? "FIELD ACTIVITY" : "CLIENT & ORDER"}</span><h3>{modal === "inventory" ? "Add trees to a zone" : modal === "activity" ? "Record a milestone" : selectedAllocation ? "Edit client allocation" : "Allocate trees"}</h3></div><button onClick={() => { setModal(null); setActiveAllocation(null); }} aria-label="Close">×</button></div>
+        <div className="modal-head"><div><span>{modal === "inventory" ? "NEW INVENTORY GROUP" : modal === "edit-group" ? "EDIT INVENTORY GROUP" : modal === "activity" ? "FIELD ACTIVITY" : "CLIENT & ORDER"}</span><h3>{modal === "inventory" ? "Add trees to a zone" : modal === "edit-group" ? "Update trees and zone" : modal === "activity" ? "Record a milestone" : selectedAllocation ? "Edit client allocation" : "Allocate trees"}</h3></div><button onClick={() => { setModal(null); setActiveAllocation(null); }} aria-label="Close">×</button></div>
         <form onSubmit={submit}>
           {modal === "inventory" && <>
             <input type="hidden" name="action" value="add-group" />
@@ -679,6 +703,17 @@ export default function Home() {
             <label>Height<input name="height" required placeholder="12–14 ft" /></label><label>Caliper<input name="caliper" required placeholder="3.5 in" /></label>
             <label>Quantity<input name="quantity" type="number" min="1" required placeholder="50" /></label><label>Planting date<input name="plantedOn" type="date" required /></label>
             <input type="hidden" name="status" value="Available" />
+          </>}
+          {modal === "edit-group" && selectedGroup && <>
+            <input type="hidden" name="action" value="update-group" />
+            <input type="hidden" name="groupId" value={selectedGroup.id} />
+            <label className="full">Zone label<input name="zoneId" required maxLength={80} defaultValue={selectedGroup.zoneId} list="zone-label-options" /></label>
+            <datalist id="zone-label-options">{farms.flatMap((f) => f.zones).map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}</datalist>
+            <label className="full">Species<input name="species" required maxLength={100} defaultValue={selectedGroup.species} /></label>
+            <label>Height<input name="height" required maxLength={40} defaultValue={selectedGroup.height} /></label><label>Caliper<input name="caliper" required maxLength={40} defaultValue={selectedGroup.caliper} /></label>
+            <label>Quantity<input name="quantity" type="number" min={selectedGroup.taggedQuantity + selectedGroup.soldQuantity || 1} required defaultValue={selectedGroup.quantity} /><small>Cannot be lower than {selectedGroup.taggedQuantity + selectedGroup.soldQuantity} tagged or sold.</small></label>
+            <label>Planting date (optional)<input name="plantedOn" type="date" defaultValue={/^\d{4}-\d{2}-\d{2}$/.test(selectedGroup.plantedOn) ? selectedGroup.plantedOn : ""} /></label>
+            <div className="delete-group-panel full"><div><strong>Delete entire group</strong><span>Also removes its allocations and work history.</span></div><button type="button" className="danger" disabled={busy} onClick={() => deleteGroup(selectedGroup)}>Delete group</button></div>
           </>}
           {modal === "activity" && <>
             <input type="hidden" name="action" value="add-activity" />

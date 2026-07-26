@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 
 type InventoryPayload = {
-  action?: "add-group" | "add-activity" | "add-allocation" | "update-allocation" | "receive-allocation" | "remove-seed-data";
+  action?: "add-group" | "update-group" | "delete-group" | "add-activity" | "add-allocation" | "update-allocation" | "receive-allocation" | "remove-seed-data";
   zoneId?: string;
   species?: string;
   height?: string;
@@ -11,6 +11,7 @@ type InventoryPayload = {
   orderNumber?: string;
   plantedOn?: string;
   groupId?: number;
+  confirmGroupId?: number;
   allocationId?: number;
   status?: "Tagged" | "Sold";
   markingMethod?: string;
@@ -137,6 +138,54 @@ export async function POST(request: Request) {
         "INSERT INTO inventory_groups (zone_id,species,height,caliper,quantity,status,client,order_number,planted_on) VALUES (?,?,?,?,?,'Available','','',?) RETURNING id"
       ).bind(data.zoneId, data.species.trim(), data.height.trim(), data.caliper.trim(), data.quantity, data.plantedOn).first();
       return Response.json({ ok: true, id: result?.id }, { status: 201 });
+    }
+
+    if (data.action === "update-group") {
+      if (!data.groupId || !data.zoneId?.trim() || !data.species?.trim() || !data.height?.trim() || !data.caliper?.trim() || !data.quantity || data.quantity < 1) {
+        return Response.json({ error: "Complete the zone, species, size, and quantity fields." }, { status: 400 });
+      }
+      const group = await env.DB.prepare(`SELECT g.id,
+        COALESCE((SELECT SUM(quantity) FROM inventory_allocations WHERE group_id = g.id), 0) AS committed
+        FROM inventory_groups g WHERE g.id = ?`).bind(data.groupId).first<{ id: number; committed: number }>();
+      if (!group) return Response.json({ error: "That inventory group no longer exists." }, { status: 404 });
+      if (data.quantity < group.committed) {
+        return Response.json({ error: `Quantity cannot be lower than the ${group.committed} trees currently tagged or sold.` }, { status: 409 });
+      }
+      const duplicate = await env.DB.prepare(`SELECT id FROM inventory_groups
+        WHERE id != ? AND zone_id = ? AND lower(species) = lower(?) AND height = ? AND caliper = ? LIMIT 1`)
+        .bind(data.groupId, data.zoneId.trim(), data.species.trim(), data.height.trim(), data.caliper.trim())
+        .first<{ id: number }>();
+      if (duplicate) {
+        return Response.json({ error: "Another inventory group already uses that zone, species, height, and caliper." }, { status: 409 });
+      }
+      await env.DB.batch([
+        env.DB.prepare(`UPDATE inventory_groups
+          SET zone_id = ?, species = ?, height = ?, caliper = ?, quantity = ?,
+              planted_on = CASE WHEN ? = '' THEN planted_on ELSE ? END
+          WHERE id = ?`)
+          .bind(
+            data.zoneId.trim(), data.species.trim(), data.height.trim(), data.caliper.trim(), data.quantity,
+            data.plantedOn || "", data.plantedOn || "", data.groupId,
+          ),
+        env.DB.prepare("UPDATE activities SET zone_id = ? WHERE group_id = ?").bind(data.zoneId.trim(), data.groupId),
+      ]);
+      return Response.json({ ok: true });
+    }
+
+    if (data.action === "delete-group") {
+      if (!data.groupId || data.confirmGroupId !== data.groupId) {
+        return Response.json({ error: "Inventory group confirmation did not match." }, { status: 400 });
+      }
+      const group = await env.DB.prepare(
+        "SELECT id, species, quantity FROM inventory_groups WHERE id = ?"
+      ).bind(data.groupId).first<{ id: number; species: string; quantity: number }>();
+      if (!group) return Response.json({ error: "That inventory group has already been removed." }, { status: 404 });
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM inventory_allocations WHERE group_id = ?").bind(data.groupId),
+        env.DB.prepare("DELETE FROM activities WHERE group_id = ?").bind(data.groupId),
+        env.DB.prepare("DELETE FROM inventory_groups WHERE id = ?").bind(data.groupId),
+      ]);
+      return Response.json({ ok: true, removedQuantity: group.quantity, species: group.species });
     }
 
     if (data.action === "add-activity") {
