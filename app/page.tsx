@@ -414,7 +414,7 @@ export default function Home() {
   const pumps = useMemo(() => [...new Set(farm?.zones.map((z) => z.pump) || [])], [farm]);
   const speciesBreakdown = useMemo(() => {
     const summary = new Map<string, { species: string; height: string; caliper: string; total: number; available: number; tagged: number; sold: number }>();
-    groups.forEach((group) => {
+    groups.filter((group) => group.zoneId.startsWith(farmCode)).forEach((group) => {
       const key = `${group.species}|${group.height}|${group.caliper}`;
       const row = summary.get(key) || { species: group.species, height: group.height, caliper: group.caliper, total: 0, available: 0, tagged: 0, sold: 0 };
       row.total += group.quantity;
@@ -424,7 +424,7 @@ export default function Home() {
       summary.set(key, row);
     });
     return [...summary.values()].sort((a, b) => `${a.species} ${a.height} ${a.caliper}`.localeCompare(`${b.species} ${b.height} ${b.caliper}`, undefined, { numeric: true }));
-  }, [groups]);
+  }, [groups, farmCode]);
   const selectedGroup = groups.find((group) => group.id === activeGroup);
   const selectedAllocation = allocations.find((allocation) => allocation.id === activeAllocation);
 
@@ -523,7 +523,7 @@ export default function Home() {
             <article><span>{farm?.name || "Current farm"}</span><strong>{farmTotal.toLocaleString()}</strong><small>{farm?.zones.length || 0} mapped irrigation zones</small></article>
           </div>
           <details className="species-breakdown" open>
-            <summary><span>Inventory by species &amp; size</span><small>{speciesBreakdown.length} species / size groups</small></summary>
+            <summary><span>Inventory by species &amp; size</span><small>{farm?.name || "Current farm"} · {speciesBreakdown.length} species / size groups</small></summary>
             <div className="species-grid">
               {speciesBreakdown.map((item) => (
                 <article key={`${item.species}-${item.height}-${item.caliper}`}>
@@ -591,7 +591,7 @@ export default function Home() {
                   }) : <div className="empty-state"><strong>No field work recorded yet</strong><span>Use “Record work” to add a milestone for any inventory group.</span></div>}
                 </div>
               ) : view === "orders" ? (
-                <div className="table-wrap"><table><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Status</th><th>Client / order</th><th>Marked as</th><th /></tr></thead><tbody>
+                <div className="table-wrap"><table><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Status</th><th>Client / order</th><th>Marked With</th><th /></tr></thead><tbody>
                   {filteredAllocations.map((allocation) => <tr key={allocation.id}>
                     <td><strong>{allocation.zoneId}-{String(allocation.groupId).padStart(3, "0")}</strong><small>Allocation #{allocation.id}</small></td>
                     <td><strong>{allocation.species}</strong><small>{allocation.height} · {allocation.caliper}</small></td>
@@ -654,7 +654,7 @@ export default function Home() {
             <label>Quantity<input name="quantity" type="number" min="1" max={(selectedGroup?.availableQuantity || 0) + (selectedAllocation?.quantity || 0)} required defaultValue={selectedAllocation?.quantity || 1} /></label>
             <label className="full">Client<input name="client" required defaultValue={selectedAllocation?.client || ""} placeholder="Client or project name" /></label>
             <label>Sales order<input name="orderNumber" defaultValue={selectedAllocation?.orderNumber || ""} placeholder="SO-0000" /></label>
-            <label>Marked as<select name="markingMethod" defaultValue={selectedAllocation?.markingMethod || "Ribbon tag"}><option>Ribbon tag</option><option>Metal tag</option><option>Paint mark</option><option>Flagging tape</option><option>Other</option></select></label>
+            <label>Marked With<input name="markingMethod" defaultValue={selectedAllocation?.markingMethod || ""} placeholder="Orange tape around the trunk" /></label>
             {selectedAllocation?.status === "Sold" && <div className="receive-panel full"><span>Remove these trees after delivery or pickup is complete.</span><button type="button" className="danger" disabled={busy} onClick={() => receiveAllocation(selectedAllocation)}>Received by Customer</button></div>}
           </>}
           <div className="form-actions full"><button type="button" className="secondary" onClick={() => { setModal(null); setActiveAllocation(null); }}>Cancel</button><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save record"}</button></div>
