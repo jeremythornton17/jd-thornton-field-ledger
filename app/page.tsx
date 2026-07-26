@@ -371,6 +371,7 @@ export default function Home() {
   const [inventoryFarmCodes, setInventoryFarmCodes] = useState<string[]>(["F70"]);
   const [modal, setModal] = useState<"inventory" | "edit-group" | "activity" | "status" | null>(null);
   const [search, setSearch] = useState("");
+  const [speciesSearch, setSpeciesSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [activeGroup, setActiveGroup] = useState<number>(1);
@@ -456,13 +457,23 @@ export default function Home() {
       summary.set(speciesKey, species);
     });
     return [...summary.values()]
-      .map((item) => ({
-        species: item.species,
-        sizes: [...item.sizes.values()].sort((a, b) => `${a.height} ${a.caliper}`.localeCompare(`${b.height} ${b.caliper}`, undefined, { numeric: true })),
-      }))
+      .map((item) => {
+        const sizes = [...item.sizes.values()].sort((a, b) => `${a.height} ${a.caliper}`.localeCompare(`${b.height} ${b.caliper}`, undefined, { numeric: true }));
+        return {
+          species: item.species,
+          sizes,
+          total: sizes.reduce((sum, size) => sum + size.total, 0),
+          available: sizes.reduce((sum, size) => sum + size.available, 0),
+          tagged: sizes.reduce((sum, size) => sum + size.tagged, 0),
+          sold: sizes.reduce((sum, size) => sum + size.sold, 0),
+        };
+      })
       .sort((a, b) => a.species.localeCompare(b.species));
   }, [groups, farmCode, inventoryFarmCodes, view]);
   const speciesSizeGroupCount = speciesBreakdown.reduce((sum, item) => sum + item.sizes.length, 0);
+  const filteredSpeciesBreakdown = speciesBreakdown.filter((item) =>
+    item.species.toLocaleLowerCase().includes(speciesSearch.trim().toLocaleLowerCase())
+  );
   const selectedGroup = groups.find((group) => group.id === activeGroup);
   const selectedAllocation = allocations.find((allocation) => allocation.id === activeAllocation);
 
@@ -598,28 +609,73 @@ export default function Home() {
             <article><span>Sold</span><strong>{sold.toLocaleString()}</strong><small>Awaiting customer receipt</small></article>
             <article><span>Inventory value</span><strong>{formatMoney(inventoryValue)}</strong><small>{farm?.name || "Current farm"} · On-property value</small></article>
           </div>
-          {view === "inventory" && <details className="species-breakdown" open>
-            <summary><span>Inventory by species &amp; size</span><small>{view === "inventory" ? inventoryScopeLabel : farm?.name || "Current farm"} · {speciesBreakdown.length} species · {speciesSizeGroupCount} size groups</small></summary>
-            <div className="species-columns">
-              {speciesBreakdown.map((item) => (
-                <section className="species-column" key={item.species}>
-                  <header><strong>{item.species}</strong><small>{item.sizes.length} {item.sizes.length === 1 ? "size" : "sizes"}</small></header>
-                  <div className="species-column-head"><span>Size</span><span>Price</span><span>Total</span><span>Available</span><span>Tagged</span><span>Sold</span></div>
-                  {item.sizes.map((size) => (
-                    <div className="species-size-row" key={`${item.species}-${size.height}-${size.caliper}`}>
-                      <div><strong>{size.height}</strong><small>{size.caliper}</small></div>
-                      <span className="size-price">{size.minPriceCents === size.maxPriceCents ? formatMoney(size.minPriceCents) : `${formatMoney(size.minPriceCents)}–${formatMoney(size.maxPriceCents)}`}</span>
-                      <b>{size.total.toLocaleString()}</b>
-                      <span className="available">{size.available.toLocaleString()}</span>
-                      <span className="tagged">{size.tagged.toLocaleString()}</span>
-                      <span className="sold">{size.sold.toLocaleString()}</span>
-                    </div>
-                  ))}
-                </section>
+          {view === "inventory" && <>
+            <div className="farm-filter inventory-scope-filter" aria-label="Select farms included in inventory">
+              <div><strong>Inventory scope</strong><small>{inventoryScopeTotal.toLocaleString()} trees · {inventoryScopeLabel}</small></div>
+              <button
+                type="button"
+                className={inventoryFarmCodes.length === farms.length ? "active" : ""}
+                aria-pressed={inventoryFarmCodes.length === farms.length}
+                onClick={() => setInventoryFarmCodes(farms.map((item) => item.code))}
+              >All farms</button>
+              {farms.map((item) => (
+                <button
+                  type="button"
+                  key={item.code}
+                  className={inventoryFarmCodes.includes(item.code) ? "active" : ""}
+                  aria-pressed={inventoryFarmCodes.includes(item.code)}
+                  onClick={() => toggleInventoryFarm(item.code)}
+                ><span className="filter-check">{inventoryFarmCodes.includes(item.code) ? "✓" : ""}</span>{item.name}</button>
               ))}
-              {!speciesBreakdown.length && <div className="species-empty">No inventory in the current farm scope.</div>}
             </div>
-          </details>}
+
+            <section className="species-breakdown" aria-label="Inventory totals by species and size">
+              <header className="species-breakdown-head">
+                <div><strong>Inventory by species &amp; size</strong><small>{inventoryScopeLabel} · {speciesBreakdown.length} species · {speciesSizeGroupCount} size groups</small></div>
+                <label className="species-search">Find a species
+                  <input
+                    type="search"
+                    value={speciesSearch}
+                    onChange={(event) => setSpeciesSearch(event.target.value)}
+                    placeholder="e.g. Live Oak"
+                  />
+                </label>
+              </header>
+              <div className="species-table-scroll">
+                <div className="species-table">
+                  <div className="species-summary-head"><span>Species</span><span>Sizes</span><span>Total</span><span>Available</span><span>Tagged</span><span>Sold</span></div>
+                  <div className="species-list">
+                    {filteredSpeciesBreakdown.map((item) => (
+                      <details className="species-row" key={item.species}>
+                        <summary>
+                          <span className="species-name"><strong>{item.species}</strong><small>View size breakdown</small></span>
+                          <span>{item.sizes.length}</span>
+                          <b>{item.total.toLocaleString()}</b>
+                          <span className="available">{item.available.toLocaleString()}</span>
+                          <span className="tagged">{item.tagged.toLocaleString()}</span>
+                          <span className="sold">{item.sold.toLocaleString()}</span>
+                        </summary>
+                        <div className="species-size-detail">
+                          <div className="species-size-head"><span>Size</span><span>Price</span><span>Total</span><span>Available</span><span>Tagged</span><span>Sold</span></div>
+                          {item.sizes.map((size) => (
+                            <div className="species-size-row" key={`${item.species}-${size.height}-${size.caliper}`}>
+                              <div><strong>{size.height}</strong><small>{size.caliper}</small></div>
+                              <span className="size-price">{size.minPriceCents === size.maxPriceCents ? formatMoney(size.minPriceCents) : `${formatMoney(size.minPriceCents)}–${formatMoney(size.maxPriceCents)}`}</span>
+                              <b>{size.total.toLocaleString()}</b>
+                              <span className="available">{size.available.toLocaleString()}</span>
+                              <span className="tagged">{size.tagged.toLocaleString()}</span>
+                              <span className="sold">{size.sold.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    ))}
+                    {!filteredSpeciesBreakdown.length && <div className="species-empty">{speciesBreakdown.length ? `No species match “${speciesSearch}”.` : "No inventory in the selected farm scope."}</div>}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </>}
 
           {view === "overview" && farm && zone && (
             <div className="overview-grid">
@@ -667,26 +723,6 @@ export default function Home() {
                 <div className="search"><span>⌕</span><input aria-label="Search records" placeholder="Search tree ID, species, client, or order…" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
                 <div className="status-key"><span className="available">● Available</span><span className="tagged">● Tagged</span><span className="sold">● Sold</span></div>
               </div>
-              {view === "inventory" && (
-                <div className="farm-filter" aria-label="Select farms included in inventory">
-                  <div><strong>Inventory scope</strong><small>{inventoryScopeTotal.toLocaleString()} trees · {inventoryScopeLabel}</small></div>
-                  <button
-                    type="button"
-                    className={inventoryFarmCodes.length === farms.length ? "active" : ""}
-                    aria-pressed={inventoryFarmCodes.length === farms.length}
-                    onClick={() => setInventoryFarmCodes(farms.map((item) => item.code))}
-                  >All farms</button>
-                  {farms.map((item) => (
-                    <button
-                      type="button"
-                      key={item.code}
-                      className={inventoryFarmCodes.includes(item.code) ? "active" : ""}
-                      aria-pressed={inventoryFarmCodes.includes(item.code)}
-                      onClick={() => toggleInventoryFarm(item.code)}
-                    ><span className="filter-check">{inventoryFarmCodes.includes(item.code) ? "✓" : ""}</span>{item.name}</button>
-                  ))}
-                </div>
-              )}
               {view === "work" ? (
                 <div className="activity-list">
                   {activities.length ? activities.map((activity) => {

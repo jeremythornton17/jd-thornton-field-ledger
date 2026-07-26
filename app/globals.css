@@ -81,27 +81,49 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .metrics span { color: #68746c; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
 .metrics strong { display: block; font: 600 29px/1.15 Georgia, serif; color: var(--forest); margin: 7px 0 5px; }
 .metrics small { font-size: 11px; line-height: 1.35; color: #7d857f; }
-.species-breakdown { background: var(--paper); border: 1px solid var(--line); margin-bottom: 20px; }
-.species-breakdown summary { min-height: 52px; padding: 13px 17px; display: flex; align-items: center; gap: 12px; color: var(--forest); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; cursor: pointer; }
-.species-breakdown summary::marker { color: var(--orange); }
-.species-breakdown summary small { margin-left: auto; color: #737c75; font-size: 11px; font-weight: 500; text-transform: none; letter-spacing: 0; text-align: right; }
-.species-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr)); align-items: start; gap: 16px; padding: 16px; border-top: 1px solid var(--line); background: #f3f1e9; }
-.species-column { min-width: 0; overflow: hidden; border: 1px solid #d3d6ce; background: #fffdf8; box-shadow: 0 2px 6px rgba(34,48,40,.04); }
-.species-column > header { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--forest); color: #fff; }
-.species-column > header strong { font: 600 19px Georgia, serif; }
-.species-column > header small { color: #d0ded6; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
-.species-column-head, .species-size-row { display: grid; grid-template-columns: minmax(88px, 1.5fr) minmax(68px, .9fr) repeat(4, minmax(44px, .65fr)); gap: 8px; align-items: center; }
-.species-column-head { padding: 9px 12px; background: #e8e8df; color: #5f6962; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .035em; }
-.species-column-head span:not(:first-child), .species-size-row > :not(:first-child) { text-align: right; }
-.species-size-row { min-height: 62px; padding: 11px 12px; border-top: 1px solid #e3e3db; font-size: 12px; }
-.species-size-row:first-of-type { border-top: 0; }
+.species-breakdown { background: var(--paper); border: 1px solid var(--line); margin-bottom: 18px; box-shadow: 0 2px 9px rgba(32,48,40,.035); }
+.species-breakdown-head { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 13px 17px; border-bottom: 1px solid var(--line); }
+.species-breakdown-head > div strong, .species-breakdown-head > div small { display: block; }
+.species-breakdown-head > div strong { color: var(--forest); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; }
+.species-breakdown-head > div small { margin-top: 5px; color: #68736c; font-size: 11px; }
+.species-search { width: min(270px, 100%); display: grid; gap: 5px; color: #657169; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
+.species-search input { width: 100%; min-height: 40px; border: 1px solid #c4cbc1; border-radius: 3px; background: #fff; color: var(--ink); padding: 8px 11px; font-size: 13px; text-transform: none; letter-spacing: 0; }
+.species-search input:focus { border-color: var(--forest); box-shadow: 0 0 0 2px #dce6df; outline: 0; }
+.species-table-scroll { overflow-x: auto; }
+.species-table { min-width: 720px; }
+.species-summary-head, .species-row > summary, .species-size-head, .species-size-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.8fr) minmax(75px, .65fr) repeat(4, minmax(80px, .7fr));
+  gap: 12px;
+  align-items: center;
+}
+.species-summary-head { min-height: 40px; padding: 8px 17px; background: #e8e8df; color: #5f6962; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .055em; }
+.species-summary-head span:not(:first-child), .species-row > summary > :not(:first-child), .species-size-head span:not(:first-child), .species-size-row > :not(:first-child) { text-align: right; }
+.species-list { max-height: 470px; overflow-y: auto; scrollbar-gutter: stable; }
+.species-row { border-top: 1px solid #e1e3dc; }
+.species-row:first-child { border-top: 0; }
+.species-row > summary { min-height: 54px; padding: 8px 17px; color: #4b5951; cursor: pointer; list-style: none; }
+.species-row > summary::-webkit-details-marker { display: none; }
+.species-row > summary:hover { background: #f5f5ee; }
+.species-row[open] > summary { background: #edf1e9; }
+.species-name { min-width: 0; position: relative; padding-left: 17px; }
+.species-name::before { content: "›"; position: absolute; left: 0; top: 1px; color: var(--orange); font-size: 18px; font-weight: 800; line-height: 1; transition: transform .15s ease; }
+.species-row[open] .species-name::before { transform: rotate(90deg); }
+.species-name strong, .species-name small { display: block; }
+.species-name strong { overflow: hidden; color: var(--ink); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.species-name small { margin-top: 2px; color: #7b847d; font-size: 9px; }
+.species-row > summary > span:not(.species-name) { font-size: 12px; font-weight: 800; }
+.species-row > summary > b { color: var(--forest); font: 600 18px Georgia, serif; }
+.species-size-detail { border-top: 1px solid #d9ddd3; background: #f7f6ef; box-shadow: inset 3px 0 var(--forest); }
+.species-size-head { min-height: 34px; padding: 7px 17px 7px 34px; color: #707970; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .045em; }
+.species-size-row { min-height: 50px; padding: 8px 17px 8px 34px; border-top: 1px solid #e3e3db; font-size: 11px; }
 .species-size-row div strong, .species-size-row div small { display: block; }
 .species-size-row div strong { color: var(--ink); font-size: 13px; }
 .species-size-row div small { margin-top: 3px; color: #737c75; font-size: 10px; }
-.species-size-row b { color: var(--forest); font: 600 18px Georgia, serif; }
+.species-size-row b { color: var(--forest); font: 600 16px Georgia, serif; }
 .species-size-row > span { font-weight: 800; }
 .species-size-row .size-price { color: #6a5544; font-size: 11px; font-weight: 700; }
-.species-empty { grid-column: 1 / -1; padding: 28px; color: #707a72; text-align: center; font-size: 13px; }
+.species-empty { padding: 28px; color: #707a72; text-align: center; font-size: 13px; }
 
 .overview-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; }
 .map-card, .zone-panel, .data-card { background: var(--paper); border: 1px solid var(--line); box-shadow: 0 3px 12px rgba(32,48,40,.04); }
@@ -166,6 +188,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .farm-filter button.active { border-color: #78907c; background: #dfe9d8; color: var(--forest-dark); }
 .filter-check { width: 15px; height: 15px; display: grid; place-items: center; border: 1px solid #a2ada1; border-radius: 3px; font-size: 10px; }
 .farm-filter button.active .filter-check { border-color: var(--forest); background: var(--forest); color: white; }
+.inventory-scope-filter { margin-bottom: 12px; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 2px 9px rgba(32,48,40,.035); }
 .search { height: 44px; flex: 1; max-width: 620px; border: 1px solid #cbd1c8; display: flex; align-items: center; gap: 9px; padding: 0 13px; background: white; }
 .search span { font-size: 20px; color: #737d75; }
 .search input { border: 0; outline: 0; width: 100%; font-size: 14px; color: var(--ink); }
@@ -262,7 +285,6 @@ td.qty { font: 600 20px Georgia, serif; color: var(--forest); }
   .content { padding: 24px 18px 36px; }
   .title-row { align-items: flex-start; }
   .title-actions { display: grid; }
-  .species-breakdown summary { align-items: flex-start; }
   .map-viewport, .map-viewport-large { height: 560px; }
   .zone-panel { display: block; }
   .zone-list, .panel-action { margin-top: 14px; }
@@ -274,9 +296,8 @@ td.qty { font: 600 20px Georgia, serif; color: var(--forest); }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metrics article { grid-column: span 1 !important; }
   .metrics article:last-child { grid-column: 1 / -1 !important; }
-  .species-breakdown summary { display: grid; }
-  .species-breakdown summary small { margin-left: 0; text-align: left; line-height: 1.4; }
-  .species-columns { padding: 10px; }
+  .species-breakdown-head { align-items: stretch; flex-direction: column; gap: 12px; }
+  .species-search { width: 100%; }
   .card-head { align-items: flex-start; }
   .legend { justify-content: flex-end; }
   .table-tools { align-items: stretch; flex-direction: column; gap: 10px; }
@@ -299,9 +320,9 @@ td.qty { font: 600 20px Georgia, serif; color: var(--forest); }
   .metrics strong { font-size: 26px; }
   .card-head .legend { display: none; }
   .map-viewport, .map-viewport-large { height: 430px; }
-  .species-column-head, .species-size-row { gap: 5px; }
-  .species-column-head { font-size: 8px; padding-inline: 8px; }
-  .species-size-row { font-size: 11px; padding-inline: 8px; }
+  .species-summary-head, .species-row > summary, .species-size-head, .species-size-row { gap: 8px; }
+  .species-summary-head, .species-row > summary { padding-inline: 12px; }
+  .species-size-head, .species-size-row { padding-left: 28px; padding-right: 12px; }
   .species-size-row div strong { font-size: 12px; }
   .species-size-row b { font-size: 16px; }
   .species-size-row .size-price { font-size: 10px; }
