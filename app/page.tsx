@@ -146,9 +146,31 @@ function downloadCsv(filename: string, content: string) {
 type MapLayers = { roads: boolean; operations: boolean; irrigation: boolean };
 
 function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; selectedZone: string; layers: MapLayers; onSelect: (zone: Zone) => void }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shapesRef = useRef<{ zone: Zone; points: { x: number; y: number }[]; center: { x: number; y: number } }[]>([]);
-  const [zoom, setZoom] = useState(farm.code === "F70" ? 1.15 : 1);
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const gestureRef = useRef<{ center: { x: number; y: number }; distance: number } | null>(null);
+  const suppressClickRef = useRef(false);
+  const fitZoom = farm.code === "F70" ? 1.15 : 1;
+  const [mapView, setMapView] = useState({ zoom: fitZoom, panX: 0, panY: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [canvasSizeVersion, setCanvasSizeVersion] = useState(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const observer = new ResizeObserver(() => setCanvasSizeVersion((version) => version + 1));
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => setIsFullscreen(document.fullscreenElement === viewportRef.current);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -179,8 +201,8 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       const baseX = offsetX + (x - minX) * longitudeCorrection * scale;
       const baseY = offsetY + drawnHeight - (y - minY) * scale;
       return {
-        x: width / 2 + (baseX - width / 2) * zoom,
-        y: height / 2 + (baseY - height / 2) * zoom,
+        x: width / 2 + (baseX - width / 2) * mapView.zoom + mapView.panX,
+        y: height / 2 + (baseY - height / 2) * mapView.zoom + mapView.panY,
       };
     };
     const boundaryPoints = farm.boundary?.length ? farm.boundary.map(project) : [];
@@ -385,9 +407,13 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       ctx.fillStyle = "#214d53";
       ctx.fillText(label, labelX, labelY);
     });
-  }, [farm, selectedZone, layers, zoom]);
+  }, [farm, selectedZone, layers, mapView, canvasSizeVersion]);
 
   function click(event: React.MouseEvent<HTMLCanvasElement>) {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left, y = event.clientY - rect.top;
     const hit = [...shapesRef.current].reverse().find(({ points }) => {
@@ -400,26 +426,174 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
     if (hit) onSelect(hit.zone);
   }
 
-  function changeZoom(next: number) {
-    setZoom(Math.max(.8, Math.min(3, Number(next.toFixed(2)))));
+  function resetMapView() {
+    setMapView({ zoom: fitZoom, panX: 0, panY: 0 });
+  }
+
+  function zoomBy(factor: number, anchor?: { x: number; y: number }) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const zoomAnchor = anchor || { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 };
+    setMapView((current) => {
+      const nextZoom = Math.max(.65, Math.min(5, Number((current.zoom * factor).toFixed(3))));
+      const ratio = nextZoom / current.zoom;
+      const centerX = canvas.clientWidth / 2;
+      const centerY = canvas.clientHeight / 2;
+      return {
+        zoom: nextZoom,
+        panX: zoomAnchor.x - centerX - (zoomAnchor.x - centerX - current.panX) * ratio,
+        panY: zoomAnchor.y - centerY - (zoomAnchor.y - centerY - current.panY) * ratio,
+      };
+    });
+  }
+
+  function localPointer(event: React.PointerEvent<HTMLCanvasElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+
+  function currentGesture() {
+    const points = [...pointersRef.current.values()];
+    if (!points.length) return null;
+    const center = {
+      x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+      y: points.reduce((sum, point) => sum + point.y, 0) / points.length,
+    };
+    const distance = points.length > 1
+      ? Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y)
+      : 0;
+    return { center, distance };
+  }
+
+  function pointerDown(event: React.PointerEvent<HTMLCanvasElement>) {
+    event.preventDefault();
+    if (!pointersRef.current.size) suppressClickRef.current = false;
+    pointersRef.current.set(event.pointerId, localPointer(event));
+    event.currentTarget.setPointerCapture(event.pointerId);
+    gestureRef.current = currentGesture();
+    if (pointersRef.current.size > 1) suppressClickRef.current = true;
+    setIsDragging(true);
+  }
+
+  function pointerMove(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!pointersRef.current.has(event.pointerId)) return;
+    event.preventDefault();
+    pointersRef.current.set(event.pointerId, localPointer(event));
+    const previous = gestureRef.current;
+    const next = currentGesture();
+    if (!previous || !next) return;
+    const deltaX = next.center.x - previous.center.x;
+    const deltaY = next.center.y - previous.center.y;
+    if (Math.abs(deltaX) + Math.abs(deltaY) > 2 || pointersRef.current.size > 1) suppressClickRef.current = true;
+    setMapView((current) => {
+      const panned = {
+        zoom: current.zoom,
+        panX: current.panX + deltaX,
+        panY: current.panY + deltaY,
+      };
+      if (pointersRef.current.size < 2 || previous.distance <= 0 || next.distance <= 0) return panned;
+      const activeCanvas = canvasRef.current;
+      if (!activeCanvas) return panned;
+      const nextZoom = Math.max(.65, Math.min(5, current.zoom * (next.distance / previous.distance)));
+      const ratio = nextZoom / current.zoom;
+      const centerX = activeCanvas.clientWidth / 2;
+      const centerY = activeCanvas.clientHeight / 2;
+      return {
+        zoom: nextZoom,
+        panX: next.center.x - centerX - (next.center.x - centerX - panned.panX) * ratio,
+        panY: next.center.y - centerY - (next.center.y - centerY - panned.panY) * ratio,
+      };
+    });
+    gestureRef.current = next;
+  }
+
+  function pointerUp(event: React.PointerEvent<HTMLCanvasElement>) {
+    pointersRef.current.delete(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    gestureRef.current = currentGesture();
+    if (!pointersRef.current.size) {
+      setIsDragging(false);
+      if (suppressClickRef.current) window.setTimeout(() => { suppressClickRef.current = false; }, 450);
+    }
+  }
+
+  function keyboardMapControl(event: React.KeyboardEvent<HTMLCanvasElement>) {
+    const panStep = event.shiftKey ? 90 : 42;
+    if (event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      zoomBy(1.25);
+    } else if (event.key === "-" || event.key === "_") {
+      event.preventDefault();
+      zoomBy(.8);
+    } else if (event.key === "0" || event.key === "Home") {
+      event.preventDefault();
+      resetMapView();
+    } else if (event.key.startsWith("Arrow")) {
+      event.preventDefault();
+      setMapView((current) => ({
+        ...current,
+        panX: current.panX + (event.key === "ArrowLeft" ? panStep : event.key === "ArrowRight" ? -panStep : 0),
+        panY: current.panY + (event.key === "ArrowUp" ? panStep : event.key === "ArrowDown" ? -panStep : 0),
+      }));
+    }
+  }
+
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await viewportRef.current?.requestFullscreen();
+    } catch {
+      // The browser may block fullscreen outside a direct user gesture.
+    }
   }
 
   return (
-    <div className={`map-viewport ${farm.code === "F70" ? "map-viewport-large" : ""}`}>
+    <div ref={viewportRef} className={`map-viewport ${farm.code === "F70" ? "map-viewport-large" : ""}`}>
       <canvas
         ref={canvasRef}
-        className="farm-canvas"
+        className={`farm-canvas ${isDragging ? "dragging" : ""}`}
         onClick={click}
+        onDoubleClick={(event) => {
+          event.preventDefault();
+          const rect = event.currentTarget.getBoundingClientRect();
+          zoomBy(1.45, { x: event.clientX - rect.left, y: event.clientY - rect.top });
+        }}
+        onPointerDown={pointerDown}
+        onPointerMove={pointerMove}
+        onPointerUp={pointerUp}
+        onPointerCancel={pointerUp}
+        onLostPointerCapture={pointerUp}
         onWheel={(event) => {
           event.preventDefault();
-          changeZoom(zoom + (event.deltaY < 0 ? .15 : -.15));
+          const rect = event.currentTarget.getBoundingClientRect();
+          zoomBy(Math.exp(-event.deltaY * .0015), { x: event.clientX - rect.left, y: event.clientY - rect.top });
         }}
-        aria-label={`${farm.name} schematic farm zone map. Zoom ${Math.round(zoom * 100)} percent.`}
+        onKeyDown={keyboardMapControl}
+        tabIndex={0}
+        aria-describedby={`map-help-${farm.code}`}
+        aria-label={`${farm.name} interactive schematic farm zone map. Zoom ${Math.round(mapView.zoom * 100)} percent.`}
       />
-      <div className="zoom-controls" aria-label="Map zoom controls">
-        <button type="button" onClick={() => changeZoom(zoom - .2)} aria-label="Zoom out">−</button>
-        <button type="button" className="zoom-level" onClick={() => changeZoom(farm.code === "F70" ? 1.15 : 1)} aria-label="Reset map zoom">{Math.round(zoom * 100)}%</button>
-        <button type="button" onClick={() => changeZoom(zoom + .2)} aria-label="Zoom in">+</button>
+      <span id={`map-help-${farm.code}`} className="sr-only">
+        Drag to move around the farm. Use the mouse wheel, pinch gesture, plus and minus buttons, or keyboard plus and minus to zoom. Arrow keys pan the map. Press zero or Home to fit the farm.
+      </span>
+      <div className="map-gesture-hint" aria-hidden="true">Drag to move&nbsp;&nbsp;·&nbsp;&nbsp;Scroll or pinch to zoom</div>
+      <div className="map-controls" aria-label="Map controls">
+        <button
+          type="button"
+          className="map-tool-button"
+          onClick={toggleFullscreen}
+          aria-label={isFullscreen ? "Exit full screen map" : "Open full screen map"}
+          title={isFullscreen ? "Exit full screen" : "Full screen"}
+        >
+          {isFullscreen
+            ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /></svg>
+            : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>}
+        </button>
+        <div className="zoom-controls" aria-label="Map zoom controls">
+          <button type="button" onClick={() => zoomBy(1.25)} aria-label="Zoom in" title="Zoom in">+</button>
+          <button type="button" className="zoom-level" onClick={resetMapView} aria-label="Fit farm to view" title="Fit farm to view">{Math.round(mapView.zoom * 100)}%</button>
+          <button type="button" onClick={() => zoomBy(.8)} aria-label="Zoom out" title="Zoom out">&minus;</button>
+        </div>
       </div>
     </div>
   );
@@ -913,7 +1087,7 @@ export default function Home() {
                   )}
                 </div>}
                 <FarmCanvas key={farm.code} farm={farm} selectedZone={zone.id} layers={layers} onSelect={(next) => setSelectedZone(next.id)} />
-                <div className="map-footer"><span>Click a zone to inspect its trees</span><strong>{zone.id}</strong></div>
+                <div className="map-footer"><span>Drag to scan · Click a zone to inspect its trees</span><strong>{zone.id}</strong></div>
               </section>
               <section className="zone-panel">
                 <div className="zone-label">SELECTED ZONE</div>
