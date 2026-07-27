@@ -12,6 +12,7 @@ type Zone = {
   zoneNumber: number;
   id: string;
   coordinates: [number, number][];
+  labelCoordinates?: [number, number];
 };
 type MapFeature = { name: string; type: "polygon" | "line" | "point"; coordinates: [number, number][] };
 type Farm = {
@@ -225,9 +226,22 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       ctx.stroke();
     }
 
+    const operationLabels: { name: string; point: { x: number; y: number }; isPoint: boolean }[] = [];
     if (layers.operations) {
       (farm.features || []).forEach((feature) => {
         const points = feature.coordinates.map(project);
+        const featureXs = points.map((point) => point.x);
+        const featureYs = points.map((point) => point.y);
+        operationLabels.push({
+          name: feature.name,
+          point: feature.type === "point"
+            ? points[0]
+            : {
+                x: (Math.min(...featureXs) + Math.max(...featureXs)) / 2,
+                y: (Math.min(...featureYs) + Math.max(...featureYs)) / 2,
+              },
+          isPoint: feature.type === "point",
+        });
         if (feature.type === "point") {
           ctx.fillStyle = "#72583d";
           ctx.fillRect(points[0].x - 3, points[0].y - 3, 6, 6);
@@ -254,13 +268,17 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       };
       const halfWidth = Math.max(7, (Math.max(...zoneXs) - Math.min(...zoneXs)) / 2 - 4);
       const halfHeight = Math.max(7, (Math.max(...zoneYs) - Math.min(...zoneYs)) / 2 - 4);
-      const points = [
+      const rectangularPoints = [
         { x: center.x - halfWidth, y: center.y - halfHeight },
         { x: center.x + halfWidth, y: center.y - halfHeight },
         { x: center.x + halfWidth, y: center.y + halfHeight },
         { x: center.x - halfWidth, y: center.y + halfHeight },
       ];
-      return { zone, points, center };
+      return {
+        zone,
+        points: farm.code === "F10" ? rectangularPoints : geographicPoints,
+        center: zone.labelCoordinates ? project(zone.labelCoordinates) : center,
+      };
     });
     ctx.save();
     if (boundaryPoints.length) {
@@ -356,12 +374,60 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
       });
     });
 
-    const pumpLabelBoxes: { left: number; top: number; right: number; bottom: number }[] = [];
     const overlaps = (
       box: { left: number; top: number; right: number; bottom: number },
       other: { left: number; top: number; right: number; bottom: number },
     ) => box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top;
 
+    const operationLabelBoxes: { left: number; top: number; right: number; bottom: number }[] = [];
+    operationLabels.forEach(({ name, point, isPoint }) => {
+      ctx.font = "700 7px Arial";
+      ctx.textBaseline = "middle";
+      const labelWidth = ctx.measureText(name).width + 8;
+      const centeredLeft = point.x - labelWidth / 2;
+      const candidates = isPoint
+        ? [
+            { left: point.x + 7, top: point.y - 8 },
+            { left: point.x - labelWidth - 7, top: point.y - 8 },
+            { left: centeredLeft, top: point.y + 7 },
+            { left: centeredLeft, top: point.y - 23 },
+          ]
+        : [
+            { left: centeredLeft, top: point.y - 8 },
+            { left: centeredLeft, top: point.y + 8 },
+            { left: centeredLeft, top: point.y - 24 },
+            { left: point.x + 8, top: point.y - 8 },
+            { left: point.x - labelWidth - 8, top: point.y - 8 },
+          ];
+      const choice = candidates.find((candidate) => {
+        const box = { ...candidate, right: candidate.left + labelWidth, bottom: candidate.top + 16 };
+        return box.left >= 6 && box.right <= width - 6 && box.top >= 6 && box.bottom <= height - 6
+          && !zoneLabelBoxes.some((zoneBox) => overlaps(box, zoneBox))
+          && !operationLabelBoxes.some((operationBox) => overlaps(box, operationBox));
+      });
+      if (!choice) return;
+      const labelBox = { ...choice, right: choice.left + labelWidth, bottom: choice.top + 16 };
+      operationLabelBoxes.push(labelBox);
+      if (isPoint) {
+        const targetX = Math.max(choice.left, Math.min(point.x, choice.left + labelWidth));
+        const targetY = Math.max(choice.top, Math.min(point.y, choice.top + 16));
+        ctx.beginPath();
+        ctx.moveTo(point.x, point.y);
+        ctx.lineTo(targetX, targetY);
+        ctx.strokeStyle = "rgba(100,78,53,.55)";
+        ctx.lineWidth = .8;
+        ctx.stroke();
+      }
+      ctx.fillStyle = "rgba(255,253,248,.88)";
+      ctx.fillRect(choice.left, choice.top, labelWidth, 16);
+      ctx.strokeStyle = "rgba(100,78,53,.28)";
+      ctx.strokeRect(choice.left, choice.top, labelWidth, 16);
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#614d38";
+      ctx.fillText(name, choice.left + 4, choice.top + 8);
+    });
+
+    const pumpLabelBoxes: { left: number; top: number; right: number; bottom: number }[] = [];
     farm.pumps.forEach((pump, index) => {
       const point = project(pump.coordinates);
       ctx.beginPath(); ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
@@ -385,6 +451,7 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
         const box = { ...candidate, right: candidate.left + labelWidth, bottom: candidate.top + 18 };
         return box.left >= 6 && box.right <= width - 6 && box.top >= 6 && box.bottom <= height - 6
           && !zoneLabelBoxes.some((zoneBox) => overlaps(box, zoneBox))
+          && !operationLabelBoxes.some((operationBox) => overlaps(box, operationBox))
           && !pumpLabelBoxes.some((pumpBox) => overlaps(box, pumpBox));
       }) || fallback;
       const labelBox = { ...choice, right: choice.left + labelWidth, bottom: choice.top + 18 };

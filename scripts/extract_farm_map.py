@@ -45,6 +45,13 @@ def placemark_name(placemark):
     return (node.text or "").strip() if node is not None else ""
 
 
+def placemark_description(placemark):
+    node = placemark.find("k:description", NS)
+    if node is None:
+        return ""
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", node.text or "")).strip()
+
+
 def collect_features(folder):
     output = []
     for placemark in folder.findall(".//k:Placemark", NS):
@@ -166,6 +173,26 @@ def main():
                             "coordinates": coords(polygon.text),
                         }
                     )
+
+        labels = next(
+            (f for f in child_folders(farm_node) if folder_name(f) == "Zone Labels"),
+            None,
+        )
+        if labels is not None:
+            label_points = {}
+            for placemark in labels.findall("k:Placemark", NS):
+                point = placemark.find(".//k:Point/k:coordinates", NS)
+                parsed = coords(point.text) if point is not None else []
+                if not parsed:
+                    continue
+                label_points[placemark_name(placemark).lower()] = parsed[0]
+                description = placemark_description(placemark)
+                if description:
+                    label_points[description.lower()] = parsed[0]
+            for zone in farm["zones"]:
+                label = label_points.get(zone["name"].lower())
+                if label:
+                    zone["labelCoordinates"] = label
 
         pumps_folder = next(
             (
