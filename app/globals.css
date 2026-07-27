@@ -50,6 +50,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .auth-button:hover { background: var(--forest-dark); }
 .auth-button:disabled { opacity: .65; cursor: wait; }
 .auth-error { margin: 0 0 18px; padding: 12px 14px; border-left: 4px solid #b54832; background: #f8e8e2; color: #743327; text-align: left; font-size: 13px; }
+.auth-card .auth-help {
+  margin: 16px auto 0; color: #6c776f; font-size: 12px; line-height: 1.5;
+}
 
 .topbar {
   position: sticky; top: 0; z-index: 12; height: 80px; display: flex; align-items: center; gap: 16px; padding: 0 30px;
