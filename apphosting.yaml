@@ -35,7 +35,7 @@ env:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: jdt-command-board.firebaseapp.com
+    value: jd-thornton-field-ledger--jdt-command-board.us-east4.hosted.app
     availability:
       - BUILD
       - RUNTIME
