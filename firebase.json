@@ -1,0 +1,27 @@
+{
+  "apphosting": [
+    {
+      "backendId": "jd-thornton-field-ledger",
+      "rootDir": ".",
+      "ignore": [
+        "node_modules",
+        ".git",
+        ".next",
+        ".vinext",
+        ".wrangler",
+        "_to_delete",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "migration-private"
+      ]
+    }
+  ],
+  "firestore": {
+    "database": "(default)",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

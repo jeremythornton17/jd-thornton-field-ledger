@@ -1,97 +1,68 @@
-# vinext-starter
+# JD Thornton Field Ledger
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+Tree inventory, farm-zone mapping, field-work milestones, and client allocation
+tracking for JD Thornton Nurseries.
 
-## Prerequisites
+## Platform
 
-- Node.js `>=22.13.0`
+- Next.js 16 on Firebase App Hosting
+- Firebase Authentication with Google sign-in
+- verified `@jdtnurseries.com` accounts only
+- Cloud Firestore for inventory, allocations, and work history
+- Cloud Storage for private tree-group photos
+- Google Cloud project: `jdt-command-board`
+- Firebase App Hosting backend: `jd-thornton-field-ledger`
 
-## Quick Start
+The app uses Firebase Admin SDK calls behind authenticated API routes. Firestore
+and Storage Security Rules deny direct browser access, so inventory validation,
+concurrency checks, and work-history logging cannot be bypassed.
+
+## Local development
+
+Prerequisites:
+
+- Node.js 22+
+- pnpm 11+
+- Google Application Default Credentials for server-side Firestore access
 
 ```bash
-npm install
-npm run dev
-npm run build
+pnpm install
+pnpm dev
 ```
 
-This starter does not use `wrangler.jsonc`.
+The Firebase web configuration is public client configuration. Server credentials
+are never stored in this repository; local development uses Application Default
+Credentials and production uses the App Hosting service account.
 
-## Included Shape
+## Validation
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```bash
+pnpm lint
+pnpm test
+pnpm build
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+## Deployment
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+The Firebase project is pinned in `.firebaserc`. App Hosting runtime and
+environment configuration live in `apphosting.yaml`.
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+```bash
+firebase deploy --only firestore,storage
+firebase deploy --only apphosting:jd-thornton-field-ledger
+```
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+## Production data migration
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+The migration script imports the protected production CSV exports into isolated
+`fieldLedger*` Firestore collections and stops if those collections already
+contain data.
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+```bash
+node scripts/migrate-to-firestore.mjs <inventory.csv> <work-log.csv>
+```
 
-## Useful Commands
+The source exports are intentionally excluded from GitHub by the
+`migration-private/` ignore rule. Live inventory and customer data belong in
+Firestore backups, not source-control history.
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)

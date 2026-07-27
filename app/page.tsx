@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import { useAppAuth } from "./auth-provider";
 
 type Zone = {
   name: string;
@@ -76,18 +77,6 @@ function zoneBelongsToFarm(zoneId: string, code: string) {
 }
 
 const LOW_STOCK_THRESHOLD = 10;
-
-const FALLBACK_GROUPS: Group[] = [
-  { id: 1, zoneId: "F70-FRONT-01", species: "Live Oak", height: "12–14 ft", caliper: "3.5 in", quantity: 86, priceCents: 0, availableQuantity: 86, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-02-12" },
-  { id: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, priceCents: 0, availableQuantity: 0, taggedQuantity: 42, soldQuantity: 0, plantedOn: "2023-11-06" },
-  { id: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, priceCents: 0, availableQuantity: 0, taggedQuantity: 0, soldQuantity: 28, plantedOn: "2023-08-18" },
-  { id: 4, zoneId: "F40-WEST-05", species: "Gumbo Limbo", height: "8–10 ft", caliper: "2.5 in", quantity: 115, priceCents: 0, availableQuantity: 115, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2025-01-20" },
-  { id: 5, zoneId: "F25-NORTH-02", species: "Royal Poinciana", height: "10–12 ft", caliper: "3 in", quantity: 64, priceCents: 0, availableQuantity: 64, taggedQuantity: 0, soldQuantity: 0, plantedOn: "2024-05-14" },
-];
-const FALLBACK_ALLOCATIONS: Allocation[] = [
-  { id: 1, groupId: 2, zoneId: "F70-FRONT-01", species: "Bald Cypress", height: "10–12 ft", caliper: "3 in", quantity: 42, priceCents: 0, status: "Tagged", client: "Palm Beach Gardens", orderNumber: "SO-2408", markingMethod: "Ribbon tag", createdAt: "" },
-  { id: 2, groupId: 3, zoneId: "F70-NORTH-03", species: "Mahogany", height: "14–16 ft", caliper: "4 in", quantity: 28, priceCents: 0, status: "Sold", client: "Evergreen Landscape", orderNumber: "SO-2391", markingMethod: "Metal tag", createdAt: "" },
-];
 
 function formatMoney(cents: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
@@ -437,11 +426,12 @@ function FarmCanvas({ farm, selectedZone, layers, onSelect }: { farm: Farm; sele
 }
 
 export default function Home() {
+  const { user, signOut } = useAppAuth();
   const [farms, setFarms] = useState<Farm[]>([]);
   const [farmCode, setFarmCode] = useState("F70");
   const [selectedZone, setSelectedZone] = useState("F70-FRONT-01");
-  const [groups, setGroups] = useState<Group[]>(FALLBACK_GROUPS);
-  const [allocations, setAllocations] = useState<Allocation[]>(FALLBACK_ALLOCATIONS);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [view, setView] = useState<"overview" | "inventory" | "work" | "orders">("overview");
   const [inventoryFarmCodes, setInventoryFarmCodes] = useState<string[]>(["F70"]);
@@ -468,7 +458,7 @@ export default function Home() {
       setAllocations(data.allocations || []);
       setActivities(data.activities);
     } catch {
-      setNotice("Prototype data is active; hosted records will sync when the database is available.");
+      setNotice("Unable to load the secure inventory. Refresh the page or sign in again.");
     }
   };
 
@@ -487,7 +477,7 @@ export default function Home() {
         setAllocations(data.allocations || []);
         setActivities(data.activities);
       })
-      .catch(() => setNotice("Prototype data is active; hosted records will sync when the database is available."));
+      .catch(() => setNotice("Unable to load the secure inventory. Refresh the page or sign in again."));
   }, []);
 
   useEffect(() => {
@@ -809,7 +799,14 @@ export default function Home() {
             }}>{label}</button>
           )}
         </nav>
-        <div className="header-actions"><button className="icon-button" aria-label="Notifications">3</button><div className="avatar">JD</div></div>
+        <div className="header-actions">
+          <button className="icon-button" aria-label="Notifications">{activities.length}</button>
+          <div className="signed-in-user">
+            <div className="avatar">{(user.displayName || user.email || "JT").split(/\s|@/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</div>
+            <span><strong>{user.displayName || "Farm team"}</strong><small>{user.email}</small></span>
+          </div>
+          <button type="button" className="sign-out-button" onClick={signOut}>Sign out</button>
+        </div>
       </header>
 
       <section className="workspace">

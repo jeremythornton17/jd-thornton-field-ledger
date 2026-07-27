@@ -40,5 +40,11 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+migration-private/
+tsconfig.tsbuildinfo
+_to_delete/
 .dev-out.log
 .dev-err.log

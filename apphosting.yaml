@@ -1,0 +1,61 @@
+runConfig:
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 40
+  cpu: 1
+  memoryMiB: 1024
+
+env:
+  - variable: FIREBASE_PROJECT_ID
+    value: jdt-command-board
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: FIREBASE_STORAGE_BUCKET
+    value: jdt-command-board.firebasestorage.app
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: FIRESTORE_DATABASE_ID
+    value: "(default)"
+    availability:
+      - RUNTIME
+  - variable: ALLOWED_EMAIL_DOMAIN
+    value: jdtnurseries.com
+    availability:
+      - RUNTIME
+  - variable: NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN
+    value: jdtnurseries.com
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyBxMJc9nf2wWYWAJe5BO13KfLauk0BcMHU
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: jdt-command-board.firebaseapp.com
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: jdt-command-board
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: jdt-command-board.firebasestorage.app
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "961981624176"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:961981624176:web:73df178dc9cc702c4de9b5
+    availability:
+      - BUILD
+      - RUNTIME

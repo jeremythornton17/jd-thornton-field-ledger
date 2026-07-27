@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Field Ledger uses the Firebase Admin SDK behind authenticated API
+    // routes. Deny direct browser access so validation and audit logging
+    // cannot be bypassed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

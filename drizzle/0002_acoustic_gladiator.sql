@@ -1,1 +1,0 @@
-CREATE INDEX `inventory_allocations_group_idx` ON `inventory_allocations` (`group_id`);

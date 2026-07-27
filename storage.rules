@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Photos are served through authenticated server routes. Direct object
+    // reads and writes stay closed even if a URL is guessed.
+    match /{object=**} {
+      allow read, write: if false;
+    }
+  }
+}
