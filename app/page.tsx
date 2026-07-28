@@ -83,7 +83,7 @@ const LOW_STOCK_THRESHOLD = 10;
 const FARM_ADDRESSES: Record<string, string> = {
   F70: "1010 E Sugarland Hwy, Clewiston, FL 33440",
   F40: "6310 US-27, Clewiston, FL 33440",
-  F25: "3262 US-27, Moore Haven, FL 33471",
+  F25: "3040 US-27, Moore Haven, FL 33471",
   F10: "1866 Baker Hwy, Moore Haven, FL 33471",
   FJAN: "Nine Mile Canal & US-27, Moore Haven, FL 33471",
 };
