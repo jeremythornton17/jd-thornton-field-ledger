@@ -18,6 +18,7 @@ type MapFeature = { name: string; type: "polygon" | "line" | "point"; coordinate
 type Farm = {
   name: string;
   code: string;
+  address?: string;
   wateringMethod?: "Hand Watered";
   zones: Zone[];
   pumps: { name: string; coordinates: [number, number] }[];
@@ -78,6 +79,22 @@ function zoneBelongsToFarm(zoneId: string, code: string) {
 }
 
 const LOW_STOCK_THRESHOLD = 10;
+
+const FARM_ADDRESSES: Record<string, string> = {
+  F70: "1010 E Sugarland Hwy, Clewiston, FL 33440",
+  F40: "6310 US-27, Clewiston, FL 33440",
+  F25: "3262 US-27, Moore Haven, FL 33471",
+  F10: "1866 Baker Hwy, Moore Haven, FL 33471",
+  FJAN: "Nine Mile Canal & US-27, Moore Haven, FL 33471",
+};
+
+function withFarmAddress(farm: Farm): Farm {
+  return { ...farm, address: FARM_ADDRESSES[farm.code] };
+}
+
+function googleMapsUrl(address: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
 
 function formatMoney(cents: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((cents || 0) / 100);
@@ -707,7 +724,10 @@ export default function Home() {
     Promise.all([
       fetch("/farm-map.json").then((response) => response.json()),
       fetch("/hand-watered-farms.json").then((response) => response.json()),
-    ]).then(([irrigated, handWatered]) => setFarms([...irrigated.farms, ...handWatered.farms]));
+    ]).then(([irrigated, handWatered]) => {
+      const mappedFarms = [...irrigated.farms, ...handWatered.farms] as Farm[];
+      setFarms(mappedFarms.map(withFarmAddress));
+    });
     fetch("/api/inventory")
       .then((response) => {
         if (!response.ok) throw new Error();
@@ -1057,7 +1077,7 @@ export default function Home() {
             {farms.length ? farms.map((item) => (
               <button key={item.code} className={farmCode === item.code ? "farm-button selected" : "farm-button"} onClick={() => changeFarm(item.code)}>
                 <span className="farm-icon">{item.name.split(" ")[0]}</span>
-                <span><strong>{item.name}</strong><small>{item.zones.length} zones · {item.wateringMethod || `${item.pumps.length} pumps`}</small></span>
+                <span><strong>{item.name}</strong><small className="farm-address-compact">{item.address}</small><small>{item.zones.length} zones · {item.wateringMethod || `${item.pumps.length} pumps`}</small></span>
               </button>
             )) : <Skeleton count={4} height={54} />}
           </div>
@@ -1068,7 +1088,18 @@ export default function Home() {
 
         <div className="content">
           <div className="title-row">
-            <div><p className="breadcrumb">FARMS / {farm?.name.toUpperCase() || "LOADING"}</p><h2>{view === "overview" ? farm?.name : view === "inventory" ? "Tree Inventory" : view === "work" ? "Work & Milestones" : "Clients & Orders"}</h2><p>{view === "overview" ? isHandWatered ? "Hand-watered growing zones and live inventory" : "Irrigation map and live inventory by growing zone" : view === "inventory" ? "Grouped by species, height, and caliper" : view === "work" ? "Planting, pruning, fertilization, treatments, and maintenance" : "Reserved, sold, pickup, and delivery commitments"}</p></div>
+            <div>
+              <p className="breadcrumb">FARMS / {farm?.name.toUpperCase() || "LOADING"}</p>
+              <h2>{view === "overview" ? farm?.name : view === "inventory" ? "Tree Inventory" : view === "work" ? "Work & Milestones" : "Clients & Orders"}</h2>
+              {farm?.address && (
+                <p className="farm-location">
+                  <span aria-hidden="true">⌖</span>
+                  <span>{farm.address}</span>
+                  <a href={googleMapsUrl(farm.address)} target="_blank" rel="noreferrer">Directions</a>
+                </p>
+              )}
+              <p className="title-description">{view === "overview" ? isHandWatered ? "Hand-watered growing zones and live inventory" : "Irrigation map and live inventory by growing zone" : view === "inventory" ? "Grouped by species, height, and caliper" : view === "work" ? "Planting, pruning, fertilization, treatments, and maintenance" : "Reserved, sold, pickup, and delivery commitments"}</p>
+            </div>
             <div className="title-actions"><button className="secondary" onClick={() => setModal("activity")}>Record work</button><button className="primary" onClick={() => setModal("inventory")}>+ Add trees</button></div>
           </div>
 
