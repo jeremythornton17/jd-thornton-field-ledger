@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 import { authErrorResponse, requireApiUser } from "@/lib/auth";
 import { adminBucket, adminDb } from "@/lib/firebase-admin";
+import { GROUPS } from "@/lib/inventory-store";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -15,13 +16,10 @@ function parseGroupId(request: NextRequest) {
 }
 
 function errorResponse(error: unknown, fallback: string) {
-  return (
-    authErrorResponse(error) ||
-    Response.json(
-      { error: error instanceof Error ? error.message : fallback },
-      { status: 500 },
-    )
-  );
+  const authResponse = authErrorResponse(error);
+  if (authResponse) return authResponse;
+  console.error(fallback, error);
+  return Response.json({ error: fallback }, { status: 500 });
 }
 
 export async function GET(request: NextRequest) {
@@ -81,7 +79,7 @@ export async function POST(request: NextRequest) {
       );
     }
     const group = await adminDb
-      .collection("fieldLedgerInventoryGroups")
+      .collection(GROUPS)
       .doc(String(groupId))
       .get();
     if (!group.exists) {

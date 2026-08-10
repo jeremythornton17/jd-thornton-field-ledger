@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { useAppAuth } from "./auth-provider";
@@ -691,8 +691,12 @@ export default function Home() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [activityCursor, setActivityCursor] = useState<number | null>(null);
+  const [hasMoreActivities, setHasMoreActivities] = useState(false);
+  const [activitiesLoaded, setActivitiesLoaded] = useState(false);
+  const [activitiesBusy, setActivitiesBusy] = useState(false);
   const [view, setView] = useState<"overview" | "inventory" | "work" | "orders">("overview");
-  const [inventoryFarmCodes, setInventoryFarmCodes] = useState<string[]>(["F70"]);
+  const [inventoryFarmCodes, setInventoryFarmCodes] = useState<string[]>([]);
   const [modal, setModal] = useState<"inventory" | "edit-group" | "activity" | "status" | null>(null);
   const [search, setSearch] = useState("");
   const [speciesSearch, setSpeciesSearch] = useState("");
@@ -707,18 +711,56 @@ export default function Home() {
   const [photoVersion, setPhotoVersion] = useState(0);
   const [confirmation, setConfirmation] = useState<ConfirmationAction | null>(null);
 
-  const loadInventory = async () => {
+  const requireApiResponse = useCallback(async (response: Response, fallback: string) => {
+    if (response.status === 401) {
+      await signOut();
+      throw new Error("Your session expired. Sign in again.");
+    }
+    if (!response.ok) {
+      const result = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(result.error || fallback);
+    }
+    return response;
+  }, [signOut]);
+
+  const loadInventory = useCallback(async () => {
     try {
       const response = await fetch("/api/inventory");
-      if (!response.ok) throw new Error();
+      await requireApiResponse(response, "Unable to load the secure inventory.");
       const data = await response.json();
       setGroups(data.groups);
       setAllocations(data.allocations || []);
-      setActivities(data.activities);
-    } catch {
-      setNotice("Unable to load the secure inventory. Refresh the page or sign in again.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to load the secure inventory. Refresh the page or sign in again.");
     }
-  };
+  }, [requireApiResponse]);
+
+  const loadActivities = useCallback(async (cursorId: number | null = null) => {
+    setActivitiesBusy(true);
+    try {
+      const params = new URLSearchParams({ limit: "100" });
+      if (cursorId !== null) params.set("cursor", String(cursorId));
+      const response = await fetch(`/api/inventory/activities?${params}`);
+      await requireApiResponse(response, "Unable to load the work log.");
+      const data = (await response.json()) as {
+        activities: Activity[];
+        nextCursor: number | null;
+        hasMore: boolean;
+      };
+      setActivities((current) => {
+        if (cursorId === null) return data.activities;
+        const existingIds = new Set(current.map((activity) => activity.id));
+        return [...current, ...data.activities.filter((activity) => !existingIds.has(activity.id))];
+      });
+      setActivityCursor(data.nextCursor);
+      setHasMoreActivities(data.hasMore);
+      setActivitiesLoaded(true);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to load the work log.");
+    } finally {
+      setActivitiesBusy(false);
+    }
+  }, [requireApiResponse]);
 
   useEffect(() => {
     Promise.all([
@@ -726,20 +768,23 @@ export default function Home() {
       fetch("/hand-watered-farms.json").then((response) => response.json()),
     ]).then(([irrigated, handWatered]) => {
       const mappedFarms = [...irrigated.farms, ...handWatered.farms] as Farm[];
-      setFarms(mappedFarms.map(withFarmAddress));
+      const addressedFarms = mappedFarms.map(withFarmAddress);
+      setFarms(addressedFarms);
+      setInventoryFarmCodes((current) => current.length
+        ? current
+        : addressedFarms.map((item) => item.code));
     });
     fetch("/api/inventory")
-      .then((response) => {
-        if (!response.ok) throw new Error();
+      .then(async (response) => {
+        await requireApiResponse(response, "Unable to load the secure inventory.");
         return response.json();
       })
       .then((data) => {
         setGroups(data.groups);
         setAllocations(data.allocations || []);
-        setActivities(data.activities);
       })
-      .catch(() => setNotice("Unable to load the secure inventory. Refresh the page or sign in again."));
-  }, []);
+      .catch((error) => setNotice(error instanceof Error ? error.message : "Unable to load the secure inventory. Refresh the page or sign in again."));
+  }, [requireApiResponse]);
 
   useEffect(() => {
     if (!confirmation) return;
@@ -753,8 +798,23 @@ export default function Home() {
   const farm = farms.find((item) => item.code === farmCode) || farms[0];
   const isHandWatered = farm?.wateringMethod === "Hand Watered";
   const zone = farm?.zones.find((item) => item.id === selectedZone) || farm?.zones[0];
+  const farmGroups = groups.filter((group) => zoneBelongsToFarm(group.zoneId, farmCode));
   const inventoryScopeGroups = groups.filter((group) => inventoryFarmCodes.some((code) => zoneBelongsToFarm(group.zoneId, code)));
   const inventoryScopeTotal = inventoryScopeGroups.reduce((sum, group) => sum + group.quantity, 0);
+  const inventoryScopeLabel = inventoryFarmCodes.length === farms.length
+    ? "All farms"
+    : inventoryFarmCodes.length === 1
+      ? farms.find((item) => item.code === inventoryFarmCodes[0])?.name || "1 farm"
+      : `${inventoryFarmCodes.length} farms`;
+  const metricGroups = view === "inventory" ? inventoryScopeGroups : farmGroups;
+  const metricScopeLabel = view === "inventory"
+    ? inventoryScopeLabel
+    : farm?.name || "Current farm";
+  const totalTrees = metricGroups.reduce((sum, group) => sum + group.quantity, 0);
+  const available = metricGroups.reduce((sum, group) => sum + group.availableQuantity, 0);
+  const tagged = metricGroups.reduce((sum, group) => sum + group.taggedQuantity, 0);
+  const sold = metricGroups.reduce((sum, group) => sum + group.soldQuantity, 0);
+  const inventoryValue = metricGroups.reduce((sum, group) => sum + group.quantity * group.priceCents, 0);
   const soldOutGroups = inventoryScopeGroups.filter((group) => group.availableQuantity === 0);
   const lowStockGroups = inventoryScopeGroups.filter((group) => group.availableQuantity > 0 && group.availableQuantity <= LOW_STOCK_THRESHOLD);
   const filteredGroups = groups.filter((group) =>
@@ -778,18 +838,7 @@ export default function Home() {
     : view === "orders"
       ? "Search client, order, tree, or zone…"
       : "Search tree ID, species, size, or zone…";
-  const farmGroups = groups.filter((group) => zoneBelongsToFarm(group.zoneId, farmCode));
-  const totalTrees = farmGroups.reduce((sum, group) => sum + group.quantity, 0);
-  const available = farmGroups.reduce((sum, group) => sum + group.availableQuantity, 0);
-  const tagged = farmGroups.reduce((sum, group) => sum + group.taggedQuantity, 0);
-  const sold = farmGroups.reduce((sum, group) => sum + group.soldQuantity, 0);
-  const inventoryValue = farmGroups.reduce((sum, group) => sum + group.quantity * group.priceCents, 0);
   const pumps = useMemo(() => [...new Set(farm?.zones.map((z) => z.pump) || [])], [farm]);
-  const inventoryScopeLabel = inventoryFarmCodes.length === farms.length
-    ? "All farms"
-    : inventoryFarmCodes.length === 1
-      ? farms.find((item) => item.code === inventoryFarmCodes[0])?.name || "1 farm"
-      : `${inventoryFarmCodes.length} farms`;
   const speciesBreakdown = useMemo(() => {
     type SizeSummary = { height: string; caliper: string; minPriceCents: number; maxPriceCents: number; total: number; available: number; tagged: number; sold: number };
     type SpeciesSummary = { species: string; sizes: Map<string, SizeSummary> };
@@ -858,8 +907,11 @@ export default function Home() {
     if (modal === "status" && payload.allocationId) payload.allocationId = Number(payload.allocationId);
     try {
       const response = await fetch("/api/inventory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
-      if (!response.ok) throw new Error((await response.json()).error);
+      await requireApiResponse(response, "Unable to save the change.");
       await loadInventory();
+      if ((modal === "activity" || modal === "edit-group") && activitiesLoaded) {
+        await loadActivities();
+      }
       setNotice(modal === "inventory" ? "Tree group added to inventory." : modal === "edit-group" ? "Inventory group updated." : modal === "activity" ? "Milestone recorded." : "Client allocation saved.");
       setModal(null);
       setActiveAllocation(null);
@@ -882,8 +934,9 @@ export default function Home() {
           ? { action: "receive-allocation", allocationId: action.allocation.id }
           : { action: "delete-group", groupId: action.group.id, confirmGroupId: action.group.id }),
       });
-      if (!response.ok) throw new Error((await response.json()).error);
+      await requireApiResponse(response, action.kind === "receive" ? "Unable to complete the delivery." : "Unable to delete the inventory group.");
       await loadInventory();
+      if (action.kind === "delete" && activitiesLoaded) await loadActivities();
       setNotice(action.kind === "receive"
         ? `${action.allocation.quantity} ${action.allocation.species} trees were marked received and removed from on-property inventory.`
         : `${action.group.quantity} ${action.group.species} trees and their group record were deleted.`);
@@ -908,8 +961,7 @@ export default function Home() {
       form.append("groupId", String(groupId));
       form.append("file", file);
       const response = await fetch("/api/inventory/photo", { method: "POST", body: form });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      await requireApiResponse(response, "Unable to upload the photo.");
       setPhotoMissing(false);
       setPhotoVersion((v) => v + 1);
       setNotice("Photo updated.");
@@ -924,7 +976,7 @@ export default function Home() {
     setBusy(true);
     try {
       const response = await fetch(`/api/inventory/photo?groupId=${groupId}`, { method: "DELETE" });
-      if (!response.ok) throw new Error((await response.json()).error);
+      await requireApiResponse(response, "Unable to remove the photo.");
       setPhotoMissing(true);
       setPhotoVersion((v) => v + 1);
       setNotice("Photo removed.");
@@ -1033,8 +1085,8 @@ export default function Home() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "bulk-add-groups", rows }),
       });
+      await requireApiResponse(response, "Unable to import the CSV file.");
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
       await loadInventory();
       const parts = [`${result.created} new group${result.created === 1 ? "" : "s"} added`];
       if (result.merged) parts.push(`${result.merged} merged into existing groups`);
@@ -1050,18 +1102,16 @@ export default function Home() {
   return (
     <main>
       <header className="topbar">
-        <div className="brand-mark">JT</div>
         <div><p className="eyebrow">JD Thornton Nurseries</p><h1>Field Ledger</h1></div>
         <nav aria-label="Primary navigation">
           {([["overview", "Farm map"], ["inventory", "Inventory"], ["work", "Work log"], ["orders", "Clients & orders"]] as const).map(([id, label]) =>
             <button key={id} className={view === id ? "active" : ""} onClick={() => {
-              if (id === "inventory" && view !== "inventory") setInventoryFarmCodes([farmCode]);
+              if (id === "work" && !activitiesLoaded) void loadActivities();
               setView(id);
             }}>{label}</button>
           )}
         </nav>
         <div className="header-actions">
-          <button className="icon-button" aria-label="Notifications">{activities.length}</button>
           <div className="signed-in-user">
             <div className="avatar">{(user.displayName || user.email || "JT").split(/\s|@/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</div>
             <span><strong>{user.displayName || "Farm team"}</strong><small>{user.email}</small></span>
@@ -1070,8 +1120,8 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="workspace">
-        <aside className="sidebar">
+      <section className={view === "overview" ? "workspace" : "workspace workspace-wide"}>
+        {view === "overview" && <aside className="sidebar">
           <div className="side-heading"><span>Farms</span><span className="muted">{farms.length || 4} locations</span></div>
           <div className="farm-list">
             {farms.length ? farms.map((item) => (
@@ -1084,31 +1134,52 @@ export default function Home() {
           <div className="side-heading pump-heading"><span>{isHandWatered ? "Watering" : "Irrigation"}</span></div>
           {pumps.map((pump) => <div className="pump-row" key={pump}><span className="pump-dot" /><span>{pump}{pump === "Hand Watered" ? "" : " Pump"}</span><b>{farm?.zones.filter((z) => z.pump === pump).length}</b></div>)}
           <div className="sync-card"><span className="sync-icon">↻</span><div><strong>Detailed map linked</strong><small>{farm ? isHandWatered ? `${farm.zones.length} hand-watered zones` : `${farm.roads.length} roads · ${farm.features.length} sites · ${farm.infrastructure.length} irrigation features` : "Loading farm layers"}</small></div></div>
-        </aside>
+        </aside>}
 
         <div className="content">
           <div className="title-row">
             <div>
-              <p className="breadcrumb">FARMS / {farm?.name.toUpperCase() || "LOADING"}</p>
+              <p className="breadcrumb">{view === "inventory" ? `INVENTORY / ${inventoryScopeLabel.toUpperCase()}` : `FARMS / ${farm?.name.toUpperCase() || "LOADING"}`}</p>
               <h2>{view === "overview" ? farm?.name : view === "inventory" ? "Tree Inventory" : view === "work" ? "Work & Milestones" : "Clients & Orders"}</h2>
-              {farm?.address && (
+              {view !== "inventory" && farm?.address && (
                 <p className="farm-location">
                   <span aria-hidden="true">⌖</span>
                   <span>{farm.address}</span>
                   <a href={googleMapsUrl(farm.address)} target="_blank" rel="noreferrer">Directions</a>
                 </p>
               )}
-              <p className="title-description">{view === "overview" ? isHandWatered ? "Hand-watered growing zones and live inventory" : "Irrigation map and live inventory by growing zone" : view === "inventory" ? "Grouped by species, height, and caliper" : view === "work" ? "Planting, pruning, fertilization, treatments, and maintenance" : "Reserved, sold, pickup, and delivery commitments"}</p>
+              <p className="title-description">{view === "overview" ? isHandWatered ? "Hand-watered growing zones and live inventory" : "Irrigation map and live inventory by growing zone" : view === "inventory" ? `Independent inventory scope: ${inventoryScopeLabel}. Grouped by species, height, and caliper.` : view === "work" ? "Planting, pruning, fertilization, treatments, and maintenance" : "Reserved, sold, pickup, and delivery commitments"}</p>
             </div>
             <div className="title-actions"><button className="secondary" onClick={() => setModal("activity")}>Record work</button><button className="primary" onClick={() => setModal("inventory")}>+ Add trees</button></div>
           </div>
 
+          {view === "inventory" && (
+            <div className="farm-filter inventory-scope-filter" aria-label="Select farms included in inventory">
+              <div><strong>Inventory scope</strong><small>{inventoryScopeTotal.toLocaleString()} trees in {inventoryScopeLabel}</small></div>
+              <button
+                type="button"
+                className={farms.length > 0 && inventoryFarmCodes.length === farms.length ? "active" : ""}
+                aria-pressed={farms.length > 0 && inventoryFarmCodes.length === farms.length}
+                onClick={() => setInventoryFarmCodes(farms.map((item) => item.code))}
+              >All farms</button>
+              {farms.map((item) => (
+                <button
+                  type="button"
+                  key={item.code}
+                  className={inventoryFarmCodes.includes(item.code) ? "active" : ""}
+                  aria-pressed={inventoryFarmCodes.includes(item.code)}
+                  onClick={() => toggleInventoryFarm(item.code)}
+                ><span className="filter-check">{inventoryFarmCodes.includes(item.code) ? "✓" : ""}</span>{item.name}</button>
+              ))}
+            </div>
+          )}
+
           <div className="metrics">
-            <article><span>Total trees</span><strong>{totalTrees.toLocaleString()}</strong><small>Across {farmGroups.length} groups at {farm?.name || "this farm"}</small></article>
-            <article><span>Available</span><strong>{available.toLocaleString()}</strong><small>{totalTrees ? Math.round(available / totalTrees * 100) : 0}% ready for allocation</small></article>
-            <article><span>Tagged</span><strong>{tagged.toLocaleString()}</strong><small>Marked for clients</small></article>
-            <article><span>Sold</span><strong>{sold.toLocaleString()}</strong><small>Awaiting customer receipt</small></article>
-            <article><span>Inventory value</span><strong>{formatMoney(inventoryValue)}</strong><small>{farm?.name || "Current farm"} · On-property value</small></article>
+            <article><span>Total trees</span><strong>{totalTrees.toLocaleString()}</strong><small>Across {metricGroups.length} groups in {metricScopeLabel}</small></article>
+            <article><span>Available</span><strong>{available.toLocaleString()}</strong><small>{totalTrees ? Math.round(available / totalTrees * 100) : 0}% ready for allocation in {metricScopeLabel}</small></article>
+            <article><span>Tagged</span><strong>{tagged.toLocaleString()}</strong><small>Marked for clients in {metricScopeLabel}</small></article>
+            <article><span>Sold</span><strong>{sold.toLocaleString()}</strong><small>Awaiting customer receipt in {metricScopeLabel}</small></article>
+            <article><span>Inventory value</span><strong>{formatMoney(inventoryValue)}</strong><small>{metricScopeLabel} - on-property value</small></article>
           </div>
           {view === "inventory" && (soldOutGroups.length > 0 || lowStockGroups.length > 0) && (
             <div className="stock-alerts">
@@ -1231,31 +1302,21 @@ export default function Home() {
                 </>}
                 <button type="button" className="secondary" onClick={exportCsv}>Export CSV</button>
               </div>
-              {view === "inventory" && (
-                <div className="farm-filter" aria-label="Select farms included in inventory">
-                  <div><strong>Inventory scope</strong><small>{inventoryScopeTotal.toLocaleString()} trees · {inventoryScopeLabel}</small></div>
-                  <button
-                    type="button"
-                    className={inventoryFarmCodes.length === farms.length ? "active" : ""}
-                    aria-pressed={inventoryFarmCodes.length === farms.length}
-                    onClick={() => setInventoryFarmCodes(farms.map((item) => item.code))}
-                  >All farms</button>
-                  {farms.map((item) => (
-                    <button
-                      type="button"
-                      key={item.code}
-                      className={inventoryFarmCodes.includes(item.code) ? "active" : ""}
-                      aria-pressed={inventoryFarmCodes.includes(item.code)}
-                      onClick={() => toggleInventoryFarm(item.code)}
-                    ><span className="filter-check">{inventoryFarmCodes.includes(item.code) ? "✓" : ""}</span>{item.name}</button>
-                  ))}
-                </div>
-              )}
               {view === "work" ? (
                 <div className="activity-list">
-                  {filteredActivities.length ? filteredActivities.map((activity) => (
+                  {activitiesBusy && activities.length === 0 ? (
+                    <div className="empty-state"><strong>Loading work records...</strong><span>Fetching the latest field activity.</span></div>
+                  ) : filteredActivities.length ? filteredActivities.map((activity) => (
                     <article key={activity.id}><div className="date-block"><b>{new Date(`${activity.activityDate}T12:00:00`).toLocaleDateString("en-US", { month: "short" })}</b><strong>{activity.activityDate.slice(-2)}</strong></div><div><span className="activity-type">{activity.activityType}</span><h3>{activity.species || "Tree group"} · {activity.zoneId}</h3><p>{activity.details || "Field work completed."}</p><small>Recorded by {activity.performedBy || "Farm team"}</small></div></article>
                   )) : <div className="empty-state"><strong>{search ? "No work records match this search" : "No field work recorded yet"}</strong><span>{search ? `Try a different activity, tree, zone, note, or crew name.` : "Use “Record work” to add a milestone for any inventory group."}</span></div>}
+                  {hasMoreActivities && (
+                    <button
+                      type="button"
+                      className="secondary activity-load-more"
+                      disabled={activitiesBusy || activityCursor === null}
+                      onClick={() => void loadActivities(activityCursor)}
+                    >{activitiesBusy ? "Loading..." : "Load older records"}</button>
+                  )}
                 </div>
               ) : view === "orders" ? (
                 <div className="table-wrap"><table className="record-table"><thead><tr><th>Allocation</th><th>Species / size</th><th>Qty</th><th>Price</th><th>Status</th><th>Client / order</th><th>Marked With</th><th /></tr></thead><tbody>

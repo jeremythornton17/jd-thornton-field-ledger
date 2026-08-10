@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   assertAuthorizedUser,
+  AuthError,
   SESSION_COOKIE,
   SESSION_MAX_AGE_MS,
 } from "@/lib/auth";
@@ -30,9 +31,30 @@ export async function POST(request: NextRequest) {
     });
     return response;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unable to verify this account.";
-    return NextResponse.json({ error: message }, { status: 403 });
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: "The sign-in request was malformed. Try signing in again." },
+        { status: 400 },
+      );
+    }
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    const errorCode =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+    if (errorCode.startsWith("auth/")) {
+      return NextResponse.json(
+        { error: "Unable to verify this account. Sign in again." },
+        { status: 403 },
+      );
+    }
+    console.error("Unable to create a Field Ledger session.", error);
+    return NextResponse.json(
+      { error: "Unable to start a secure session. Try again." },
+      { status: 500 },
+    );
   }
 }
 
@@ -47,4 +69,3 @@ export async function DELETE() {
   });
   return response;
 }
-
