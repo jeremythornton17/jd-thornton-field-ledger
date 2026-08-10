@@ -8,6 +8,7 @@ import {
   deleteGroup,
   listInventory,
   receiveAllocation,
+  reserveIdBlock,
   StoreError,
   updateAllocation,
   updateGroup,
@@ -31,8 +32,7 @@ type InventoryPayload = Partial<GroupInput> & {
     | "add-allocation"
     | "update-allocation"
     | "receive-allocation"
-    | "bulk-add-groups"
-    | "remove-seed-data";
+    | "bulk-add-groups";
   client?: string;
   orderNumber?: string;
   groupId?: number;
@@ -53,10 +53,8 @@ function storeErrorResponse(error: unknown, fallback: string) {
   if (error instanceof StoreError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
-  return Response.json(
-    { error: error instanceof Error ? error.message : fallback },
-    { status: 500 },
-  );
+  console.error(`[field-ledger inventory] ${fallback}`, error);
+  return Response.json({ error: fallback }, { status: 500 });
 }
 
 function validatedGroupInput(
@@ -134,20 +132,32 @@ export async function POST(request: NextRequest) {
       let created = 0;
       let merged = 0;
       const errors: { row: number; error: string }[] = [];
+      const validRows: { row: number; input: GroupInput }[] = [];
       for (let index = 0; index < data.rows.length; index++) {
         const input = validatedGroupInput(data.rows[index]);
         if (!input) {
           errors.push({ row: index + 1, error: "Invalid inventory fields." });
           continue;
         }
+        validRows.push({ row: index + 1, input });
+      }
+      const firstReservedId = validRows.length
+        ? await reserveIdBlock("group", validRows.length)
+        : 0;
+      for (let index = 0; index < validRows.length; index++) {
+        const { row, input } = validRows[index];
         try {
-          const result = await addOrMergeGroup(input);
+          const result = await addOrMergeGroup(input, firstReservedId + index);
           if (result.merged) merged++;
           else created++;
         } catch (error) {
+          if (!(error instanceof StoreError)) {
+            console.error(`[field-ledger import] Unable to import row ${row}.`, error);
+          }
           errors.push({
-            row: index + 1,
-            error: error instanceof Error ? error.message : "Unable to import row.",
+            row,
+            error:
+              error instanceof StoreError ? error.message : "Unable to import row.",
           });
         }
       }
@@ -207,7 +217,6 @@ export async function POST(request: NextRequest) {
       }
       const id = await addActivity({
         groupId: data.groupId!,
-        zoneId: data.zoneId!,
         activityType: clampText(data.activityType, TEXT_LIMITS.activityType),
         activityDate: data.activityDate!,
         details: clampText(data.details ?? "", TEXT_LIMITS.details),
@@ -276,15 +285,6 @@ export async function POST(request: NextRequest) {
       return Response.json({
         ok: true,
         removedQuantity: await receiveAllocation(data.allocationId!),
-      });
-    }
-
-    if (data.action === "remove-seed-data") {
-      return Response.json({
-        ok: true,
-        removedGroups: 0,
-        removedQuantity: 0,
-        removedAllocations: 0,
       });
     }
 

@@ -2,15 +2,21 @@ import { createHash } from "node:crypto";
 import {
   FieldValue,
   type DocumentData,
+  type DocumentReference,
+  type DocumentSnapshot,
   type Transaction,
 } from "firebase-admin/firestore";
 import { adminDb } from "./firebase-admin";
 
-const GROUPS = "fieldLedgerInventoryGroups";
-const GROUP_KEYS = "fieldLedgerGroupKeys";
-const ALLOCATIONS = "fieldLedgerAllocations";
-const ACTIVITIES = "fieldLedgerActivities";
-const COUNTERS = "fieldLedgerMeta/counters";
+export const GROUPS = "fieldLedgerInventoryGroups";
+export const GROUP_KEYS = "fieldLedgerGroupKeys";
+export const ALLOCATIONS = "fieldLedgerAllocations";
+export const ACTIVITIES = "fieldLedgerActivities";
+export const COUNTERS = "fieldLedgerMeta/counters";
+
+const DELETE_BATCH_SIZE = 450;
+const DEFAULT_ACTIVITY_PAGE_SIZE = 100;
+const MAX_ACTIVITY_PAGE_SIZE = 200;
 
 export type InventoryGroup = {
   id: number;
@@ -101,6 +107,36 @@ async function nextId(transaction: Transaction, field: "group" | "allocation" | 
   return value;
 }
 
+export async function reserveIdBlock(
+  field: "group" | "allocation" | "activity",
+  count: number,
+) {
+  if (!Number.isInteger(count) || count < 1) {
+    throw new StoreError("At least one ID must be reserved.");
+  }
+  return adminDb.runTransaction(async (transaction) => {
+    const counterRef = adminDb.doc(COUNTERS);
+    const counter = await transaction.get(counterRef);
+    const previous = Number(counter.get(field) || 0);
+    const next = previous + count;
+    transaction.set(
+      counterRef,
+      { [field]: next, updatedAt: FieldValue.serverTimestamp() },
+      { merge: true },
+    );
+    return previous + 1;
+  });
+}
+
+function assertGroupWritable(group: DocumentSnapshot<DocumentData>) {
+  if (group.get("deletingAt")) {
+    throw new StoreError(
+      "This inventory group is being deleted. Retry the deletion if it does not finish.",
+      409,
+    );
+  }
+}
+
 function groupData(data: DocumentData): Omit<InventoryGroup, "availableQuantity" | "taggedQuantity" | "soldQuantity"> {
   return {
     id: Number(data.id),
@@ -127,11 +163,10 @@ function allocationData(data: DocumentData): Allocation {
   };
 }
 
-function activityData(data: DocumentData): Activity {
+function activityData(data: DocumentData): Omit<Activity, "zoneId"> {
   return {
     id: Number(data.id),
     groupId: Number(data.groupId),
-    zoneId: String(data.zoneId || ""),
     activityType: String(data.activityType || ""),
     activityDate: String(data.activityDate || ""),
     details: String(data.details || ""),
@@ -140,10 +175,9 @@ function activityData(data: DocumentData): Activity {
 }
 
 export async function listInventory() {
-  const [groupSnapshot, allocationSnapshot, activitySnapshot] = await Promise.all([
+  const [groupSnapshot, allocationSnapshot] = await Promise.all([
     adminDb.collection(GROUPS).get(),
     adminDb.collection(ALLOCATIONS).get(),
-    adminDb.collection(ACTIVITIES).get(),
   ]);
 
   const allocations = allocationSnapshot.docs
@@ -181,19 +215,58 @@ export async function listInventory() {
       caliper: groupMap.get(allocation.groupId)?.caliper || "",
       priceCents: groupMap.get(allocation.groupId)?.priceCents || 0,
     })),
-    activities: activitySnapshot.docs
-      .map((doc) => activityData(doc.data()))
-      .sort((a, b) => b.activityDate.localeCompare(a.activityDate) || b.id - a.id)
-      .map((activity) => ({
-        ...activity,
-        species: groupMap.get(activity.groupId)?.species ?? null,
-        height: groupMap.get(activity.groupId)?.height ?? null,
-        caliper: groupMap.get(activity.groupId)?.caliper ?? null,
-      })),
   };
 }
 
-export async function addOrMergeGroup(input: GroupInput) {
+export async function listActivities(options: { cursorId?: number; limit?: number } = {}) {
+  const pageSize = Math.min(
+    Math.max(options.limit || DEFAULT_ACTIVITY_PAGE_SIZE, 1),
+    MAX_ACTIVITY_PAGE_SIZE,
+  );
+  let query = adminDb
+    .collection(ACTIVITIES)
+    .orderBy("activityDate", "desc")
+    .limit(pageSize + 1);
+
+  if (options.cursorId) {
+    const cursor = await activityRef(options.cursorId).get();
+    if (!cursor.exists) {
+      throw new StoreError("That work-log page is no longer available. Reload the work log.", 409);
+    }
+    query = query.startAfter(cursor);
+  }
+
+  const [groupSnapshot, activitySnapshot] = await Promise.all([
+    adminDb.collection(GROUPS).get(),
+    query.get(),
+  ]);
+  const groupMap = new Map(
+    groupSnapshot.docs.map((doc) => {
+      const group = groupData(doc.data());
+      return [group.id, group] as const;
+    }),
+  );
+  const pageDocs = activitySnapshot.docs.slice(0, pageSize);
+  const hasMore = activitySnapshot.docs.length > pageSize;
+
+  return {
+    activities: pageDocs.map((doc) => {
+      const activity = activityData(doc.data());
+      const group = groupMap.get(activity.groupId);
+      return {
+        ...activity,
+        zoneId: group?.zoneId || "",
+        species: group?.species ?? null,
+        height: group?.height ?? null,
+        caliper: group?.caliper ?? null,
+      };
+    }),
+    nextCursor: hasMore && pageDocs.length ? Number(pageDocs.at(-1)!.id) : null,
+    hasMore,
+  };
+}
+
+export async function addOrMergeGroup(input: GroupInput, reservedId?: number) {
   return adminDb.runTransaction(async (transaction) => {
     const keyRef = groupKeyRef(input);
     const key = await transaction.get(keyRef);
@@ -205,6 +278,7 @@ export async function addOrMergeGroup(input: GroupInput) {
         transaction.delete(keyRef);
         throw new StoreError("The inventory index was stale. Retry this import row.", 409);
       }
+      assertGroupWritable(existing);
       if (Number(existing.get("priceCents") || 0) !== input.priceCents) {
         throw new StoreError(
           "This group already exists with a different price. Edit the existing group before adding more trees.",
@@ -223,7 +297,7 @@ export async function addOrMergeGroup(input: GroupInput) {
       return { id, merged: true };
     }
 
-    const id = await nextId(transaction, "group");
+    const id = reservedId || (await nextId(transaction, "group"));
     transaction.create(groupRef(id), {
       ...input,
       id,
@@ -241,6 +315,7 @@ export async function updateGroup(id: number, input: GroupInput) {
     const currentRef = groupRef(id);
     const current = await transaction.get(currentRef);
     if (!current.exists) throw new StoreError("That inventory group no longer exists.", 404);
+    assertGroupWritable(current);
 
     const allocations = await transaction.get(
       adminDb.collection(ALLOCATIONS).where("groupId", "==", id),
@@ -272,12 +347,6 @@ export async function updateGroup(id: number, input: GroupInput) {
         );
       }
     }
-    const activityDocs = (
-      await transaction.get(
-        adminDb.collection(ACTIVITIES).where("groupId", "==", id),
-      )
-    ).docs;
-
     const changeNotes: string[] = [];
     if (normalizedInput.priceCents !== oldData.priceCents) {
       const oldPrice =
@@ -307,15 +376,10 @@ export async function updateGroup(id: number, input: GroupInput) {
       transaction.set(newKeyRef, { groupId: id });
     }
 
-    for (const activity of activityDocs) {
-      transaction.update(activity.ref, { zoneId: normalizedInput.zoneId });
-    }
-
     if (activityId !== null) {
       transaction.create(activityRef(activityId), {
         id: activityId,
         groupId: id,
-        zoneId: normalizedInput.zoneId,
         activityType: "Inventory adjustment",
         activityDate: new Date().toISOString().slice(0, 10),
         details: changeNotes.join(" "),
@@ -327,12 +391,11 @@ export async function updateGroup(id: number, input: GroupInput) {
 }
 
 export async function deleteGroup(id: number) {
-  return adminDb.runTransaction(async (transaction) => {
+  const prepared = await adminDb.runTransaction(async (transaction) => {
     const currentRef = groupRef(id);
-    const [current, allocations, activities] = await Promise.all([
+    const [current, allocations] = await Promise.all([
       transaction.get(currentRef),
       transaction.get(adminDb.collection(ALLOCATIONS).where("groupId", "==", id)),
-      transaction.get(adminDb.collection(ACTIVITIES).where("groupId", "==", id)),
     ]);
     if (!current.exists) {
       throw new StoreError("That inventory group has already been removed.", 404);
@@ -348,18 +411,63 @@ export async function deleteGroup(id: number) {
       );
     }
     const data = groupData(current.data()!);
-    allocations.docs.forEach((doc) => transaction.delete(doc.ref));
-    activities.docs.forEach((doc) => transaction.delete(doc.ref));
-    transaction.delete(groupKeyRef(data));
-    transaction.delete(currentRef);
-    return { removedQuantity: data.quantity, species: data.species };
+    transaction.update(currentRef, {
+      deletingAt: current.get("deletingAt") || FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    return {
+      data,
+      allocationPaths: allocations.docs.map((doc) => doc.ref.path),
+    };
   });
+
+  const activities = await adminDb
+    .collection(ACTIVITIES)
+    .where("groupId", "==", id)
+    .get();
+  const childRefs: DocumentReference<DocumentData>[] = [
+    ...prepared.allocationPaths.map((path) => adminDb.doc(path)),
+    ...activities.docs.map((doc) => doc.ref),
+  ];
+  for (let index = 0; index < childRefs.length; index += DELETE_BATCH_SIZE) {
+    const batch = adminDb.batch();
+    childRefs
+      .slice(index, index + DELETE_BATCH_SIZE)
+      .forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
+
+  await adminDb.runTransaction(async (transaction) => {
+    const currentRef = groupRef(id);
+    const [current, allocations] = await Promise.all([
+      transaction.get(currentRef),
+      transaction.get(adminDb.collection(ALLOCATIONS).where("groupId", "==", id)),
+    ]);
+    if (!current.exists) return;
+    if (!current.get("deletingAt")) {
+      throw new StoreError("The deletion was interrupted before it could be finalized.", 409);
+    }
+    if (!allocations.empty) {
+      throw new StoreError(
+        "A client allocation was added while this group was being deleted. Review the group before retrying.",
+        409,
+      );
+    }
+    transaction.delete(groupKeyRef(groupData(current.data()!)));
+    transaction.delete(currentRef);
+  });
+
+  return {
+    removedQuantity: prepared.data.quantity,
+    species: prepared.data.species,
+  };
 }
 
-export async function addActivity(input: Omit<Activity, "id">) {
+export async function addActivity(input: Omit<Activity, "id" | "zoneId">) {
   return adminDb.runTransaction(async (transaction) => {
     const group = await transaction.get(groupRef(input.groupId));
     if (!group.exists) throw new StoreError("That inventory group no longer exists.", 404);
+    assertGroupWritable(group);
     const id = await nextId(transaction, "activity");
     transaction.create(activityRef(id), {
       ...input,
@@ -376,6 +484,7 @@ export async function addAllocation(input: AllocationInput) {
   return adminDb.runTransaction(async (transaction) => {
     const group = await transaction.get(groupRef(input.groupId));
     if (!group.exists) throw new StoreError("That inventory group no longer exists.", 404);
+    assertGroupWritable(group);
     const allocations = await transaction.get(
       adminDb.collection(ALLOCATIONS).where("groupId", "==", input.groupId),
     );
@@ -411,6 +520,7 @@ export async function updateAllocation(id: number, input: AllocationInput) {
     if (!allocation.exists || !group.exists) {
       throw new StoreError("That allocation could not be updated.", 404);
     }
+    assertGroupWritable(group);
     const committedExceptCurrent = groupAllocations.docs.reduce(
       (sum, doc) =>
         sum + (Number(doc.id) === id ? 0 : Number(doc.get("quantity") || 0)),
@@ -435,6 +545,7 @@ export async function receiveAllocation(id: number) {
     const data = allocationData(allocation.data()!);
     const group = await transaction.get(groupRef(data.groupId));
     if (!group.exists) throw new StoreError("The inventory group no longer exists.", 404);
+    assertGroupWritable(group);
     transaction.update(group.ref, {
       quantity: Math.max(Number(group.get("quantity") || 0) - data.quantity, 0),
       updatedAt: FieldValue.serverTimestamp(),

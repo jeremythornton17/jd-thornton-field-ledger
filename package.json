@@ -9,7 +9,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "pnpm run build && node --test tests/inventory-validation.test.mjs",
+    "test": "pnpm run build && pnpm run test:unit && pnpm run test:firestore",
+    "test:unit": "node --test tests/inventory-validation.test.mjs",
+    "test:firestore:run": "tsx --test tests/inventory-store.emulator.test.ts",
+    "test:firestore": "firebase emulators:exec --only firestore --project demo-field-ledger-test \"pnpm run test:firestore:run\"",
     "lint": "eslint . --ignore-pattern .next"
   },
   "dependencies": {
@@ -27,7 +30,9 @@
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
+    "firebase-tools": "^15.26.0",
     "tailwindcss": "4.2.1",
+    "tsx": "4.23.1",
     "typescript": "5.9.3"
   },
   "type": "module"
