@@ -116,8 +116,14 @@ def find_duplicate_zone_ids(farms):
 
 
 def main():
+    if len(sys.argv) not in {3, 5} or (len(sys.argv) == 5 and sys.argv[3] != "--replace-farm"):
+        raise SystemExit(
+            "Usage: extract_farm_map.py SOURCE.kml TARGET.json "
+            "[--replace-farm FARM_CODE]"
+        )
     source = Path(sys.argv[1])
     target = Path(sys.argv[2])
+    replacement_code = sys.argv[4].upper() if len(sys.argv) == 5 else None
     root = ET.parse(source).getroot()
     farms = []
     farm_nodes = []
@@ -243,6 +249,28 @@ def main():
             feature for feature in farm["infrastructure"] if feature_near_zones(feature, farm["zones"])
         ]
         farms.append(farm)
+
+    if replacement_code:
+        replacement = [farm for farm in farms if farm["code"] == replacement_code]
+        if len(replacement) != 1:
+            raise SystemExit(f"Expected exactly one {replacement_code} farm in {source}")
+        if not target.is_file():
+            raise SystemExit(f"Cannot replace {replacement_code}: {target} does not exist")
+        existing_farms = json.loads(target.read_text(encoding="utf-8"))["farms"]
+        existing = [farm for farm in existing_farms if farm["code"] == replacement_code]
+        if len(existing) != 1:
+            raise SystemExit(f"Expected exactly one {replacement_code} farm in {target}")
+        old_zone_ids = sorted(zone["id"] for zone in existing[0]["zones"])
+        new_zone_ids = sorted(zone["id"] for zone in replacement[0]["zones"])
+        if old_zone_ids != new_zone_ids:
+            raise SystemExit(
+                f"Refusing to replace {replacement_code}: zone IDs changed. "
+                "Migrate inventory references before changing zone IDs."
+            )
+        farms = [
+            replacement[0] if farm["code"] == replacement_code else farm
+            for farm in existing_farms
+        ]
 
     duplicate_ids = find_duplicate_zone_ids(farms)
     if duplicate_ids:

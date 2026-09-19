@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "test": "pnpm run build && pnpm run test:unit && pnpm run test:firestore",
-    "test:unit": "node --test tests/inventory-validation.test.mjs",
+    "test:unit": "node --test tests/inventory-validation.test.mjs tests/farm-map.test.mjs",
     "test:firestore:run": "tsx --test tests/inventory-store.emulator.test.ts",
     "test:firestore": "firebase emulators:exec --only firestore --project demo-field-ledger-test \"pnpm run test:firestore:run\"",
     "lint": "eslint . --ignore-pattern .next"

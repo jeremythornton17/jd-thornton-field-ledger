@@ -66,3 +66,19 @@ The source exports are intentionally excluded from GitHub by the
 `migration-private/` ignore rule. Live inventory and customer data belong in
 Firestore backups, not source-control history.
 
+## Farm map sources
+
+`public/farm-map.json` supplies the irrigated farm maps. The 10 Acre Farm geometry
+and pump-house locations come from
+`output/10 Acre Farm - Structures Aligned.kml` (September 19, 2026), a
+10 Acre-only copy of the supplied Google Earth file. It supersedes the 10 Acre
+section of `output/JD Thornton Maps Cleaned.kml`; the other farms in the
+supplied KML have not been imported. To refresh 10 Acre without changing
+other farms or their inventory-linked zone IDs, run:
+
+```bash
+python scripts/extract_farm_map.py "output/10 Acre Farm - Structures Aligned.kml" public/farm-map.json --replace-farm F10
+```
+
+The replacement stops if the zone IDs change. Such a change needs an inventory
+migration rather than a geometry-only map refresh.
