@@ -1249,11 +1249,11 @@ export default function Home() {
           {view === "overview" && farm && zone && (
             <div className="overview-grid">
               <section className="map-card">
-                <div className="card-head"><div><span className="live-dot" />LIVE FARM MAP</div><div className="legend"><span><i className="legend-zone" />Zone</span>{!isHandWatered && <><span><i className="legend-pump" />Pump</span><span><i className="legend-road" />Road</span><span><i className="legend-line" />Irrigation</span></>}</div></div>
+                <div className="card-head"><div><span className="live-dot" />LIVE FARM MAP</div><div className="legend"><span><i className="legend-zone" />Zone</span>{!isHandWatered && <><span><i className="legend-pump" />Pump</span>{farm.roads.length > 0 && <span><i className="legend-road" />Road</span>}{farm.infrastructure.length > 0 && <span><i className="legend-line" />Irrigation</span>}</>}</div></div>
                 {!isHandWatered && <div className="layer-controls" aria-label="Map layers">
-                  {([["roads", "Roads"], ["operations", "Operations"], ["irrigation", "Irrigation detail"]] as const).map(([key, label]) =>
-                    <button key={key} className={layers[key] ? "enabled" : ""} onClick={() => setLayers((current) => ({ ...current, [key]: !current[key] }))}><span />{label}</button>
-                  )}
+                  {farm.roads.length > 0 && <button className={layers.roads ? "enabled" : ""} onClick={() => setLayers((current) => ({ ...current, roads: !current.roads }))}><span />Roads</button>}
+                  {farm.features.length > 0 && <button className={layers.operations ? "enabled" : ""} onClick={() => setLayers((current) => ({ ...current, operations: !current.operations }))}><span />Operations</button>}
+                  {farm.infrastructure.length > 0 && <button className={layers.irrigation ? "enabled" : ""} onClick={() => setLayers((current) => ({ ...current, irrigation: !current.irrigation }))}><span />Irrigation detail</button>}
                 </div>}
                 <FarmCanvas key={farm.code} farm={farm} selectedZone={zone.id} layers={layers} onSelect={(next) => setSelectedZone(next.id)} />
                 <div className="map-footer"><span>Drag to scan · Click a zone to inspect its trees</span><strong>{zone.id}</strong></div>

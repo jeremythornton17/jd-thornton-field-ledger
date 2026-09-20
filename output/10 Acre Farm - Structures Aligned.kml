@@ -1,0 +1,1982 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+  <Document id="1oaCeSgGBhFEp2h68naJdX-aqqf8ZZwZb">
+    <name>JD Thornton Maps - 10 Acre Farm Structures Aligned</name>
+    <StyleMap id="__managed_style_2AE148DF9041F1558C09">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_2AE148DF9041F1558C09_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_2AE148DF9041F1558C09_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_0009E4109141F12C5AD6_highlight">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff5b4935</color>
+          <width>1.8</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>004f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_11C7C1EC0241F1558C0B_highlight">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff58906f</color>
+          <width>1.5</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>704f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_093069E21E41F15A3D8F_highlight">
+      <styleUrl>https://earth.google.com/balloon_components/base/1.1.0.0/card_template.kml#main</styleUrl>
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff5b4935</color>
+          <width>1.8</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>004f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_2B0AFE7AF241F1558C0C_normal">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff999d65</color>
+        </LineStyle>
+        <PolyStyle>
+          <color>004f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_0CBDBC804F41F1558C0C">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_0CBDBC804F41F1558C0C_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_0CBDBC804F41F1558C0C_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_2AE148DF9041F1558C09_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=ffee58&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.6</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_060A4D88E541F1558C08_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff999d65</color>
+          <width>1.33333</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>99c5c9a6</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_0D76B5E72E41F1558C14_normal">
+      <styleUrl>https://earth.google.com/balloon_components/base/1.1.0.0/card_template.kml#main</styleUrl>
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.6</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_0D76B5E72E41F1558C14">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_0D76B5E72E41F1558C14_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_0D76B5E72E41F1558C14_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <StyleMap id="__managed_style_1C02922D6241F1558C0C">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_1C02922D6241F1558C0C_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_1C02922D6241F1558C0C_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_0D5636AA1E41F1558BFF_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>668b6a2e</color>
+          <width>0.444667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_27563A544041F1558C04_normal">
+      <Style>
+        <IconStyle>
+          <scale>0.65</scale>
+          <Icon>
+            <href>data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABaElEQVRYhe2VrXKDQBRGDzWoGIhvHCTxiKpg0tWr+ypVtelb9CVamCGqOyE6v6oRRMXxAFtRaCnTNCFDBsOZwVy+5X5793IXWlpaWhrGqKgfA/fAHdDPYivgHXgF3uqz9pseMAFSQB950kzTq/LhcyrQA56ABwDHceLhcJiORqOuYRhEUXRYLped9XrtZfoX4BH4qGLkPyaANk1zJ6UMkyRJdYkkSVIpZWia5o6vakzqSj4mK7uUMiwnLiOlDPk5jnEdBp4B7bruLN+5UmovhAgsy9ratr0VQgRKqX1eCcdxZpmJ5zoMKEq7F0IElBpQCBH8UQV1ToKbE+/7AL7vd/NAHMe3ZdF8Pv+OFbT9su4SA2ehtb547SkDK4Aoig55wPO8XVlUjBW0q4tdFTjahLZtby3LunoTNv4bwpUHUeVR7LpuPBgMUt/3u1prptPpYbFYdDabzdVGcW6iscuoSGPXcUtLy9X4BIG5PkyXUsc/AAAAAElFTkSuQmCC</href>
+          </Icon>
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.75</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_27563A544041F1558C04">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_27563A544041F1558C04_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_27563A544041F1558C04_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_10A6C1BD9141F1558C07_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>aa9b8152</color>
+          <width>4</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_27563A544041F1558C04_highlight">
+      <Style>
+        <IconStyle>
+          <scale>0.78</scale>
+          <Icon>
+            <href>data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABaElEQVRYhe2VrXKDQBRGDzWoGIhvHCTxiKpg0tWr+ypVtelb9CVamCGqOyE6v6oRRMXxAFtRaCnTNCFDBsOZwVy+5X5793IXWlpaWhrGqKgfA/fAHdDPYivgHXgF3uqz9pseMAFSQB950kzTq/LhcyrQA56ABwDHceLhcJiORqOuYRhEUXRYLped9XrtZfoX4BH4qGLkPyaANk1zJ6UMkyRJdYkkSVIpZWia5o6vakzqSj4mK7uUMiwnLiOlDPk5jnEdBp4B7bruLN+5UmovhAgsy9ratr0VQgRKqX1eCcdxZpmJ5zoMKEq7F0IElBpQCBH8UQV1ToKbE+/7AL7vd/NAHMe3ZdF8Pv+OFbT9su4SA2ehtb547SkDK4Aoig55wPO8XVlUjBW0q4tdFTjahLZtby3LunoTNv4bwpUHUeVR7LpuPBgMUt/3u1prptPpYbFYdDabzdVGcW6iscuoSGPXcUtLy9X4BIG5PkyXUsc/AAAAAElFTkSuQmCC</href>
+          </Icon>
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.75</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_0A15E130C141F1558C04">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_0A15E130C141F1558C04_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_0A15E130C141F1558C04_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_2627304DBB41F1558C0B_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff8b6a2e</color>
+          <width>1.33333</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_11C7C1EC0241F1558C0B">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_11C7C1EC0241F1558C0B_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_11C7C1EC0241F1558C0B_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_1C02922D6241F1558C0C_highlight">
+      <styleUrl>https://earth.google.com/balloon_components/base/1.1.0.0/card_template.kml#main</styleUrl>
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=fbc02d&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_03B4913ADD41F1558C0E">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_03B4913ADD41F1558C0E_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_03B4913ADD41F1558C0E_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <StyleMap id="__managed_style_0009E4109141F12C5AD6">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_0009E4109141F12C5AD6_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_0009E4109141F12C5AD6_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_2B0AFE7AF241F1558C0C_highlight">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff999d65</color>
+          <width>1.5</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>004f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_1C02922D6241F1558C0C_normal">
+      <styleUrl>https://earth.google.com/balloon_components/base/1.1.0.0/card_template.kml#main</styleUrl>
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=fbc02d&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_0D9542020F41F1558C09_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>0.978</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>809cc3a8</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_0D9542020F41F1558C09">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_0D9542020F41F1558C09_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_0D9542020F41F1558C09_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_0A15E130C141F1558C04_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>0.978</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>807caf91</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_07AD3B023F41F1558C06_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>1.467</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>807eaf6a</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_03B4913ADD41F1558C0E_highlight">
+      <styleUrl>https://earth.google.com/balloon_components/base/1.1.0.0/card_template.kml#main</styleUrl>
+      <Style>
+        <IconStyle>
+          <scale>0.9</scale>
+          <Icon>
+            <href>data:image/png;base64,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</href>
+          </Icon>
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.95</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_3CC695C77641F1558C08_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff3b74d8</color>
+          <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_0CBDBC804F41F1558C0C_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff58906f</color>
+          <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>998ec3a8</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_0CBDBC804F41F1558C0C_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff58906f</color>
+          <width>1.33333</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>998ec3a8</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_3CC695C77641F1558C08_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff3b74d8</color>
+          <width>1.33333</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_3CC695C77641F1558C08">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_3CC695C77641F1558C08_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_3CC695C77641F1558C08_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <StyleMap id="__managed_style_2627304DBB41F1558C0B">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_2627304DBB41F1558C0B_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_2627304DBB41F1558C0B_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <StyleMap id="__managed_style_2B0AFE7AF241F1558C0C">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_2B0AFE7AF241F1558C0C_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_2B0AFE7AF241F1558C0C_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <StyleMap id="__managed_style_060A4D88E541F1558C08">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_060A4D88E541F1558C08_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_060A4D88E541F1558C08_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_07D9C6C2CC41F1558C07_normal">
+      <Style>
+        <IconStyle>
+          <scale>0.75</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=000000&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.6</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_0009E4109141F12C5AD6_normal">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff5b4935</color>
+          <width>1.2</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>004f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_03B4913ADD41F1558C0E_normal">
+      <styleUrl>https://earth.google.com/balloon_components/base/1.1.0.0/card_template.kml#main</styleUrl>
+      <Style>
+        <IconStyle>
+          <scale>0.75</scale>
+          <Icon>
+            <href>data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAZXUlEQVR4nO2beXRUVZ7HP1WVrapSqeyVVCAEQhISQowEFARkURRbWgEbsEFswcZhul3o0VbbUWx3XFqlG7W1RbEVEWRoxZZBBzHsSAIJhGwkJCF7yJ7KWpWqN3/c+6oqC4jOzJk5Z/qec0/gvXu/77fd33LvLY2iKPx/btr/bQL+0f7R/tH+0f43m+4yxvgBBsD+P/B9o6Sh/78Z1x8IA1zfh625yHMjYAEiADNCCO1Aq/xbCzh/BGFawAoEy26WOO1Ak/x74UfgImm0AlES1wx0SMwGoAboGzxpOAEkAIlApASJQEhUZb4dOCt76w8gMMQLWyUwGCEAlfl2oAQo4IdZXKTEHSsxVdptQL3ErZTYld4TfQYBZUigRIQ0VSvwY6D2g4BAII/L01gUkAKM88JWrcBbADUI6zMAxUDzZTI/yUsA3lbQgUf7kQhFgpcQvAWgMj9JgkyUk4Llewce7QcCvnL+CcnApZifCCQB472EoC4tEJpqB7KkAEwI6zwjn1+sRQyiWxVCiNeYNslw3qC5ld4CGIswzwzJ/CxJOJEWC9HRVk7l5vgC4ZJ5H4TzcgLdQE5DW0/nYOoswXozQvNJElsVgh4gOSWVrq5OKs9XmCTTRqBIMt+PEHp2Q1uPaxhsPR5hqkKYDBAdbWXq9BnknMimvOycamnerQ+55LRAKB6zjwFmAlFGYyBv/WUzecUVfJ15hOLyWubeeBNAAHClZCYFSJZzh2uJXkwnIbSkn3P9DRSUVpF5JIusU4V8c/A7xiYkgtBcMpAmx6vzh2sq8+PwKI+77r6HrFOFvPWXzRw7eYZ/ffIZdXwaMMGLVzfNU4B7gc0I6SsBAXpl996DSl1rz5C+6GdLFUCREswEXgGWAta61h7UDsQCy4DXgIMIS1FWr7l3WNzS6kYlOSVVxb4AbAeeAW4BzIOwLfKbLwOfS1qUZSvuGhb7sSefUXF7JC2vSdpitcAYIF5KZAzAi69t5IqJk3ApDOkv//Et0tKvBOEIExBLZiSQEB2i93EpEB2iD5B4sfJ9AqCffd0NPPHM+mFx9YZAPvr0cyIjLSDW9kQ5NwZIUMdFh+h1Ei9avp8EBKWlX8nzL28YFvvXDzzEdTe4rXcAzVqEo7NK5n1vvW0pCxYvo9/FsN3HT8+GP2/G188POS9JMjoKGN0vVmuCfBaLMGmL0RjI+tffQtHoLoodbrHy4oa3VMuMkThjgYSYUH2sxI4FRsueAFh1Oh0vvv5nND5+F8V+/g8bMRoDVesZJ/GjtAjHFgNYDMZAHln3PE4Xl+yjxiRy95r7VUJHyfmjgcRR4fowL8KtkmDue+gxIizW78Weed1NzJ47RFuxQMKocH3QIMsaDXD7irtJSkm7JG6Excqvf/OISnOU7GYtnqSEaTPnEG6xuqXW2tbOukf/hRWL5/O3HdsGSHTNA49gibaCSDlTpRBi8cT5GCAdMCenpvGLe+4fMH/f3q/51aplPLL2nykpOTvg3WNPv4xBaEvNH0bKngTEASPk83BzcAhrH/39gPmb3t7ILddfw4vPPEFPn939/NYlK1QBmL35fhY4BCjm4BAlr8qmFNR2K0cLapTR8Ymq81AA5aHHn1MKarvd/aU33lffdeJxLquBPwFHENmc8tFnewfMe/jJ9QNwDcZA5f3tuweM+c1jT6vvW4CdCGe7XH5jP9LxrXthw4B5Dzzy5ADshUtXDEdvA8LJ/gpgLfA3+SFl4wc7ldPV3cq0WXO9CSgGFK1Op7y7bbdyurrb3SdNmTEY9HXgW0QWp/xkwdIB4zd+sNObwHNAHaCEhIUr/36kwD3uRHmbEudRQC2wFfiD/EYDoKSkXanknre553z4+beKVqdT5+QhcgnlpTf/qpyu7lbm3rxQfVcMvC0Fyl3AJqAUUBavWK0890e3pLqBw8AWRDqpjIyLV74716acrOxWTlZ2K3uOlyohYeHq+Do5/oI69kB+vXvsgfx6JTLKqo4tBT7yZmjGnHnusScru5XtX2cp/gF6byEc8hbYF4cL3GOzy21K0vg0dWyNpLkYUCKjrMo3OZXeWIeA54CbdYh1G4HwjjGNF+o5dnAf3Z02gHJEqtsohRHV0daq99MbmDDpGhG+jCYmTLyavbt30u+wByLWqjEswsLrH3xGeNQIdzh69emHyT6yH0Tq/B2iOOlDpMSWyvJSnzHjJhAbn4RLgeCwSEYnJHNw75c4+/tNktZAvTGQl97ZxtjkK9zYO7ZsYte2D5BL4whwXmJHdnXaDCeOHaSuphLJS54UTrFOMm9CxPXI7k6bQTKvElkqCTUhUkrLmZwsbli4nACDCZcCEdEjuXbufOprKunqsjFl5g0899YnRI8c4yawOP80Lz5+H3IXOh8olITYEB4/BAg9lXWE+bevQuvjh0uB2DFJXDP7JuprztNl62DilGt57o2PSRw/0Y3d1trKo2uW0NfbC1CGqCFOI1JrPyC4saHWH1EcFUrmS4E8jdTYLDxFkBXRamV34NkPSESkypYps+bxwjs7udx2/8+vJ+/EERU3UxIQJF93ICLJTCBs2T89xOoHn75s7GcfXMk3X2wDobRMKQQzwjkHevGl8nQayAaydUAXokzskwBNCPMJkJMmIJKkKKBXjousrij1GZOcjjUucdjsy7vv/nQzn2/5M5Kgo5JutT4YJbHbEUVWdOHpbKZc91OCQiO/Fzv3+EHeXv8oCEWdkTROQCQ73so8i7C4MkTKXwj0qBsiOkTMTsZjCZMRhZKqJRCe/Swie4w3mUN49ZMDRMfGX1Q71eVnWbtkOr3dnciPtiESnPBBQ+sl9ljAGh0bzytbvsUcOniYFzENtaxdMo3WpgaACkTEGsPA6q8DqAJOSUFkI5Z2hco4CE2kIiqqEYglEQP4J6ROYvS4NFob6+l32A0IbZUDPva+3sDcY98y7cbF+PgFDNFOS2MD61bPp00QWC8FOBEw+fnrScmYRkR0LM31NSiKEiiFUgoYOttb9SX5J5l6wyI0Wp8h2N1dnTyxej51lWUgHFuDxA6IiUtg6vUL0Gp1tFyo9ZcKC5Pf70fkJ62I4ogIRMX1NCLW1gFKcJhFefLdPcq2nC5lW06X8sHhBmX6TUu8Y/hxKXElMiZOeeHjQ+6x23K6lCfe3q0Eh1nUsc2IzQ4FUKbftER5/2Cde+yf/p6vpGS484l2RJjqBJS4pDRlw67TA7Bf3n5cscYlqOPbpFYVQFmw8sEBY1c+8gdFqx2QG2xGVL9TAJ0GuAZh7pOAqUB8gCGQde/tY+TY8UPMbvP6tXyz4y8gfMcpaT1hAOMmziA6LoGKwhzKC3PUKY0IrzsJCLjx57/mjgdfGoLb77Dz7C/nci4/GymwEsSSNAcYAklMn4plRDx1589yNvco9r4epBaLpPWablp+P8t+88IQ7K+2vsFHf3gY5AaLVEY2cEgDrJDEXS0Fob3vle2kz7h5CJBK6Kv330LxyYMgrOUoHn9h9BragbCQLIR3j0ybNo/7XtmOVjv8bryttYlnV82kqbYChLOqkgKOGmZ4HXAMocno+AlX8/Bbe/Dx9RtmKLyzbiXffbUdPJEiFxkF5iA88kTAOO2nv+C6Zb/BqTBsVzQ64tOmcvCzTbhcThNiPR1HmGyrZLwCYW6FiN2jOGNQCPe9tgtfvemi2D7+BiyxiRz/6hMQ4asBYWWtCFPvAKoRzvIMch/Dx9ePBzb8HYM54qLYCRNncnjX+zj6eg1SJs1Asw6YjzChcYagEFav34HWT39RIKcCAaZQFEWhNOcAiBBai8gY6xBpaIn8QAxiKypgwb3rGZN+7SVxnQqExcTTWF1KXVm+DpF/VErsei/sYsSGyBWAYc6ytaTNuu2SuDo/Pf5GEwVH94DwB41AvRYR5oIARqVcjY8xBLsT7E64UFvF5qdW8uqaOezf+Rf3c7sTZt7+IOEx8SAyuDRE6CxBVGrVeEKp2To2jUk3rxowP+s/dvDmgwvY9PgdVBSfHvDupn96Dn/9gM2LcMRZQaYX86lAmDncyqzlDw+Y//d3n+WZ29PY/uqD9PTa3c+Tp92irgh3OaxDOMEoYFR7Yw1TbrsXtD50tDax8Z+v5fyZY7Q31lB4bA8ORz9x6TPdSyE0ejSn9m0Hz9GZQ5ppCjIZ0Wp1LH/6EwLDY9za2LPpaXZt/C3NNWU0nC8ia/eHWOKvICRmLE4FfPUm0Gg4dzITRELmlNj1UthpiKzU79a1G4hKuNKNvWvjw+z/5DW6ba1UFWVTW17I+JnCOk58vZXi7/aAp8It1kpTbQRaHH09nD2xnz6Hky1P3UFHU63qNAoAMre8RN6hL90SHT15HklTb1aJTJJaHy97AsDEm1cSmTDJPefEf2wnc4s7CpwFap39drY9v4qasiL3uCk/W0tUfJqqLTWrU7ftkwDjqLTpJM9a4p5TlLWPIzvfVLFzgb6CQ7s4+sV72J1QeGyP+q5J8tyuk2AW2UN9DUG0XqjlxN/fARHq8hGhxgiEns87woQbV4HOT2yPpc+m8MC/0dfdYUCEQ5PUTmhE3HgWPvYRisYXpws621v55ImF9Nt7Veaz5HKJcDr6AuvK8ki9/k6cLnApWuLSZ5P3zRacjj41SQpCrPtIY4iFpc9+jk+ACacL7HY7nzyxiF5bK4hE7aRUTERV/jHGzbqdvW8/isvZj+SnCCjSIXJxdzlsa6mn/ORelchSCVSFOGmNtPfYDE6Xwoi02TgV0PoZiEmeQsnRz+m39wYiHJ8hKGIki36/E/+gSLd57nv3d1TnH1E18J0kwoGoAcI7Gqv9gqLHEho7HqcCfoEhWMZeScnRXbj6HSp2YIAphEXrdhAck+TG/u7fXqf40N9ARIxjCH/UD4T323sDy3L20dlcCyKynJEKGFoO23tsBsl8g9TQWURYU8dE1589wZjpi/ExhuBUQB9qJWHGYnraG9FodcRNmse8R7egD7G6CawuOErmOw/BwHI4HxHe1OPssNriLBJm34HGV0SiQMto4qcuoKetAYCY1Onc9OhWzCOS3dgdTbXsfulOXP0OJOP5kkmjtIKg7rbGAPmtIsT6LwHOXKwcduEpHV0SpB2xCzsTiI7NmMe8x3ZwOU1xOdn58Ayay0+DpxwuZ+DxeIqkIzzlxl8y/Z7XLwsbYN/rqyg9uB2E0vbLb6jlsA5hOWo5XCOFkw1kXawcrkR49hiEN4/HUw73Apb2ulIfQ2Qc5tjU743tZ3a/RWnmFvDs1uiQuQdiCUYjoocGiGkqP0X0FXPxD4n+XuzzJ74i++MnQSylfDwOWXXKZoSfUTdgyhFOvRDo0yGSgnrEaW+EZDoOER6T5b8jEZYSJQntBcLrzuwnZvJC91IYrjdVnObg679AcTlB+BQ9ntPiSImp+qEGwBdFMVXnfM3IqUvQ+AdeFLutrox9L96GUyzZCmkQqYitsxA8zj0IsaWnwXNPoA485XC6JOgK+e+rpPT8wxKuIjxxCo6udvp7bXopoEpA63L0Bdbmfk30VYvQ+A0ltL2+jP0v3Iqjuw1pfh2IUKb3DwonasJ1GEJH0NtWj+Ls9y6HAxw9NkND0WGsVy9G0fkNwe6xtbJ//a10N1erpt+KyA/8IpKnM2raUnz1Jjrrz/lI3DBE/HdJa28DujVSQrMQPiAWueUVEGJl0q82E5o4FQBXv538rY9RvvdtKTNOSusI9TOFk7FmExGpc9R31GZ9Ru67a+jv7QKxrKoQdQFxc37J+J8/j85PD0BPcxUn37mH5qJDIJbkaUQuEWS0jGHSvR9ijk1zY7eWHif7zbvoaa5CMn5eKo7kxU+RMP9f3GOrD2/l1OYHcNp7QDhAtRLMAo5rgOmS+clSEFZfYwjXPJGJIXIMg1vR9scp37MBxDLIxnOdhqDYNMyjM2gpPkRXfYk6pR5R2U0GfOPn/5bEReuG4Lr67WS/tojmwv0qU0UIqwwFCI6/CtOI8XScz6W9wl1qNyGiVDpgGHvLoyQs+Nch2DWHt3B60xoQDjcLUbxlA4d0CI2PR5j/OI1WR9qvt2IcNXHYdRc8bia2yhy6G875IJznAYTD1Pa1NwR0nM/F0dkCwsSq5AczAJNl8m0kLn9tWFyXRkd4+nyaTu3GYWvSI0z1KPK2SG9rjX/H+Vz62urBc/XlCMLsQ0NT5pC04k+40A7BNo5Io7e5ks6qPC3CSTYjdoP6vMvhKwFD9LV3EzVrzUUdjwsN5oTp1B98H8XpCJRSPSoJsiFCj7o1XYDwJyN9jCGk3vc3FJ+Ai5faOn+MMak0HPkIybgNyJFW1MnAUlu1kESNjx/j792B1hB6UeygsdOoP/wBLseAcrhxQDnsYwwhcfVW8NFfcidW429Co9HSXpwJomStlwzXILxrsTTjOEQY9Ruz/A0MozK+d5fXN2QkfS2VdFe7tVUtzbUB4UjVm14jpdUarNc/QMiVCy+Ji48eXYCJtjNfqUuhAVkOq/dzMMRmoASE4HCCwwldTdUUvrmY3KcyqNrzqvu5wwnhs+7FP2IMeMrhkQhntF8KRL1oFRg4ZirmiYsHzK879FfyXrmego2LaC05OuCddcHz+BhCQHjvFMRGrVpql8lvTQDCfM1WLHN/655rdzgp+/QRsn87ipLN99DX2+N+Z0yaq7qF4cthR3sdobPuRdH60tdSTfGrs+mpPkV/Vwu2s5nYO5sxJt8gpKrR4Rc+mrYTn6rm2ocoiW1ySaUifcqouz9Ga7K4tVG14yHqvnwGR1sNfU1ltBzfik9EAn5RKW5taQNM2Aq+AuFnXBK7QWpd3ff3GbnsDfysaW7sms8epzHzTVyOXnpqz9BVlUtQxlKxS31yh4rZjFc53ILwpi0uRw/txQdwOJxUvL+C/o4GEGXjaYDmg+/QnPOZW6L6pBsJSr8NRBI1uBxOAgi+5m58otLccxqP/JXmg++omigEahWXk6qPf0Vndb57XNBVKwkYkQ4iiUlC5B9qup4EBJjG/wRD6gL3nI7yEzQecN8wOQH02Ar30rBvIw4ntAvzR/LcwnDlsMbfTF9bDe3HNoNwOvnS/PRAWE/FdwRetRJFJ87u9Ilz6Mz7DFd3qx6Rzam3OIIDRmZguWMzLo0OlwL2tlpq31uM4nSozKuVZhiuflNPTR6BGctxocWFFsO4udhObkNxdBvlcjAjQl64T/AIou/+FMXXgEsBZ7+dmveW4LQ1gGeLzg+I7Kk4hmHCIpq+XAeuAeVw8ZBy2NFSTk/pARRHL4jz+xN4blZGuvpsBpdLwW/sLFzScwfEz6Cn6CtcvR0GRF6v941IIHLlDggIdptn08612GtykaZ8XArBLnt0f3uNPyYLPjHi4BP/IPzjptKd/wWKo1c94zPozFYsq3agDYlzY7fu30BXzqcgwq96OtwLhCtOR2BX0de4OhtBOOk8qdQB5XAgEK44egMl82o5XCLB3OVwX+Vx/Mf9BI1RrGuNMRJ92s9QHD2AC0P6UkKXbgJ9mJvA3vKjtH35O/AULUV4boKqJ88RfeePo590F4pORCJtUAyGtMUojm4A9Km3ELr0PbTBHubtTWW0bLkTFCeIxCgfsZusl1YQ5Opp1UuzV0+HzyJPh9XLkZMZ/nQ4CxHeJiNyhVmA1XfUVEJXu7eYLtkUp52WN2bQf6EIPJFCTUnNiLWdLrHD9Rl3ErTwT5eFDdD24RL6ir8Cod39yD1/xDljKkNPh9Vy+IQOz/l8LyJ2N0oizyK0X4JIPoIRmnIAVld7tZ8mKAZt1BWXjL8uBboPvEbfmZ3g2a0pQ2jhJCLBMUtsA2Dtrzul0cXNQGOO/V7s3oIv6M58GUn/GTwnv6eQ2R7ixkozIjErw1MO29VqsBZhHm2IGF4hGVcBbQhT8sfLXB3nMtHFzwaT1XMraVC3l+6le9f96k7QWfnxPOBM8FPtFb2Z622ScYNUhBkIdpzLxDftdhRfw0WxnS1ldG65Hfrd5XAOnt2gQsQybkY483qET1Nvh/TA8L8X8JV/HYOeG4EZiKWQgtwZ0pisGFbtQRs8agiQ60I+3e/NQ+nrUIWciQipWcBh05PtfQC2p8wRiKJsMmI3eRYQro2agOHOL9DoQ4ZgK7ZaujffjKulDDw7QUUI0z7A0FvmepVp7zbcIZ1L9sHNgRB8AMIKOoBI7DZDf+4WCB8HYQlu7ThObaH3k+Xg6FIJPIDwJQXAKcO69hZ1rO/M33U79q/3QWyOmhDWZlY6LwQ4Tm9HY80A80g3dn/Zt/R+uBClowaE5RYgLPY0npR8cBv2pzMX+8nMpVoGwgJUx6XmEWhCx6C1TMBVl4vSdl4dXyeZVy8nFAY83p4zGLT3WbNOYmYgHNcViHwiHEA74io0kSkodbm46nLVaRcQyyoXwfhJhHVddvsxAlAJVZlXLyyHMfBmhupPchEaOSmJzb4Edgie0ly9caqePJu8xnUg1na2xPYWgu2HMDP4JzOX05wIB+OUHxuH8OThCEsIlP9vYOCBZgkiqbpUa0U4MfWILRmxlxeKEIZRfrMWIYBaSYv6G6YfxDz8OAvwbuqPFsIQ3jsKIQAbQgDtCCGUIPb6LrfpEMssAcG8GY8AOhGMt+O5s1SIcA8/uP1XBQAiO1S1b8ZjAerP1eoRWvwxLQyP9s14LED98VYzYqn9n2lqQRTwP4AdhKgzTN838Ie0/wR77v5/v+h69gAAAABJRU5ErkJggg==</href>
+          </Icon>
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.95</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_07D9C6C2CC41F1558C07">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_07D9C6C2CC41F1558C07_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_07D9C6C2CC41F1558C07_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_10A6C1BD9141F1558C07_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>aa9b8152</color>
+          <width>2.66667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_127F57D1F741F1558C04_highlight">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff5b4935</color>
+          <width>1.2</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>704f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_0D5636AA1E41F1558BFF_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>668b6a2e</color>
+          <width>0.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_10A6C1BD9141F1558C07">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_10A6C1BD9141F1558C07_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_10A6C1BD9141F1558C07_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_07AD3B023F41F1558C06_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>0.978</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>807eaf6a</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_127F57D1F741F1558C04_normal">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff5b4935</color>
+          <width>0.8</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>704f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_1EA9F47A9541F1558C09_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff4074b3</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_1EA9F47A9541F1558C09_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff4074b3</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_1EA9F47A9541F1558C09">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_1EA9F47A9541F1558C09_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_1EA9F47A9541F1558C09_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_12662412FA41F1558C08_highlight">
+      <Style>
+        <IconStyle>
+          <scale>0.9</scale>
+          <Icon>
+            <href>data:image/png;base64,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</href>
+          </Icon>
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.95</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_127F57D1F741F1558C04">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_127F57D1F741F1558C04_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_127F57D1F741F1558C04_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_0D76B5E72E41F1558C14_highlight">
+      <styleUrl>https://earth.google.com/balloon_components/base/1.1.0.0/card_template.kml#main</styleUrl>
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.6</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_12662412FA41F1558C08">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_12662412FA41F1558C08_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_12662412FA41F1558C08_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <StyleMap id="__managed_style_093069E21E41F15A3D8F">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_093069E21E41F15A3D8F_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_093069E21E41F15A3D8F_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_157B4A039641F1558C06_highlight">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.6</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_0D9542020F41F1558C09_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>1.467</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>809cc3a8</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_0BACD7FC0141F1558C13_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=fbc02d&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+          <gx:displayMode>card</gx:displayMode>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_157B4A039641F1558C06_normal">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.6</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_157B4A039641F1558C06">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_157B4A039641F1558C06_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_157B4A039641F1558C06_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <StyleMap id="__managed_style_07AD3B023F41F1558C06">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_07AD3B023F41F1558C06_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_07AD3B023F41F1558C06_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_07D9C6C2CC41F1558C07_highlight">
+      <Style>
+        <IconStyle>
+          <scale>0.9</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=000000&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.6</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_093069E21E41F15A3D8F_normal">
+      <styleUrl>https://earth.google.com/balloon_components/base/1.1.0.0/card_template.kml#main</styleUrl>
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff5b4935</color>
+          <width>1.2</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>004f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_11C7C1EC0241F1558C0B_normal">
+      <Style>
+        <IconStyle>
+          <scale>0</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff58906f</color>
+        </LineStyle>
+        <PolyStyle>
+          <color>704f7192</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_0D5636AA1E41F1558BFF">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_0D5636AA1E41F1558BFF_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_0D5636AA1E41F1558BFF_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_09C79C956441F12B8A64_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.66667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_09C79C956441F12B8A64">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_09C79C956441F12B8A64_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_09C79C956441F12B8A64_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_24B3F9F10E41F1558C08_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>1.467</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>804a78d8</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_2AE148DF9041F1558C09_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=ffee58&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.6</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_2627304DBB41F1558C0B_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff8b6a2e</color>
+          <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_07EF17F91C41F1558C0B_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>0.978</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>805f9f70</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_24B3F9F10E41F1558C08">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_24B3F9F10E41F1558C08_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_24B3F9F10E41F1558C08_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_24B3F9F10E41F1558C08_normal">
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>0.978</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>804a78d8</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_0BACD7FC0141F1558C13_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=fbc02d&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>2.667</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+          <gx:displayMode>card</gx:displayMode>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_12662412FA41F1558C08_normal">
+      <Style>
+        <IconStyle>
+          <scale>0.75</scale>
+          <Icon>
+            <href>data:image/png;base64,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</href>
+          </Icon>
+        </IconStyle>
+        <LabelStyle>
+          <scale>0.95</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>1.778</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_07EF17F91C41F1558C0B_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>1.467</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>805f9f70</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_07EF17F91C41F1558C0B">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_07EF17F91C41F1558C0B_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_07EF17F91C41F1558C0B_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_0A15E130C141F1558C04_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff31543f</color>
+          <width>1.467</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>807caf91</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <StyleMap id="__managed_style_0BACD7FC0141F1558C13">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#__managed_style_0BACD7FC0141F1558C13_normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#__managed_style_0BACD7FC0141F1558C13_highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <gx:CascadingStyle kml:id="__managed_style_060A4D88E541F1558C08_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+          <scale>0</scale>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff999d65</color>
+          <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>99c5c9a6</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <gx:CascadingStyle kml:id="__managed_style_09C79C956441F12B8A64_highlight">
+      <Style>
+        <IconStyle>
+          <scale>1.2</scale>
+          <Icon>
+            <href>https://earth.google.com/earth/document/icon?color=1976d2&amp;id=2000&amp;scale=4</href>
+          </Icon>
+          <hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels" />
+        </IconStyle>
+        <LabelStyle>
+        </LabelStyle>
+        <LineStyle>
+          <color>ff2dc0fb</color>
+          <width>4</width>
+        </LineStyle>
+        <PolyStyle>
+          <color>40ffffff</color>
+        </PolyStyle>
+        <BalloonStyle>
+        </BalloonStyle>
+      </Style>
+    </gx:CascadingStyle>
+    <Folder id="5ECF04E773000001">
+      <name>JD Thornton Maps-Field Ledger App</name>
+      <open>1</open>
+      <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+      <Folder id="5ECF04E774000002">
+        <name>JD Thornton Maps</name>
+        <open>1</open>
+        <description>Cleaned and consolidated farm, irrigation, pump, road, and operational mapping.</description>
+        <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+        <Folder id="5ECF04E7780001F5">
+          <name>10 Acre Farm</name>
+          <open>1</open>
+          <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+          <Folder id="5ECF04E7780001F6">
+            <name>Irrigation Zones</name>
+            <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+            <Folder id="5ECF04E7780001F7">
+              <name>East Pump Zones</name>
+              <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+              <Placemark id="5ECF04E7780001F8">
+                <name>East 1</name>
+                <description>10 Acre Farm · East Irrigation Pump</description>
+                <styleUrl>#__managed_style_060A4D88E541F1558C08</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.092511557344,26.816540100443,0 -81.09229652815699,26.816540100443,0 -81.09229652815699,26.817194884973,0 -81.092511557344,26.817194884973,0 -81.092511557344,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E7780001F9">
+                <name>East 2</name>
+                <description>10 Acre Farm · East Irrigation Pump</description>
+                <styleUrl>#__managed_style_060A4D88E541F1558C08</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.092262802921,26.816540100443,0 -81.092047773733,26.816540100443,0 -81.092047773733,26.817194884973,0 -81.092262802921,26.817194884973,0 -81.092262802921,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E7780001FA">
+                <name>East 3</name>
+                <description>10 Acre Farm · East Irrigation Pump</description>
+                <styleUrl>#__managed_style_060A4D88E541F1558C08</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.09201404849701,26.816540100443,0 -81.09179901931,26.816540100443,0 -81.09179901931,26.817194884973,0 -81.09201404849701,26.817194884973,0 -81.09201404849701,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E7780001FB">
+                <name>East 4</name>
+                <description>10 Acre Farm · East Irrigation Pump</description>
+                <styleUrl>#__managed_style_060A4D88E541F1558C08</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.09176529407399,26.816540100443,0 -81.091550264886,26.816540100443,0 -81.091550264886,26.817194884973,0 -81.09176529407399,26.817194884973,0 -81.09176529407399,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E7780001FC">
+                <name>East 5</name>
+                <description>10 Acre Farm · East Irrigation Pump</description>
+                <styleUrl>#__managed_style_060A4D88E541F1558C08</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.09151653965,26.816540100443,0 -81.091301510463,26.816540100443,0 -81.091301510463,26.817194884973,0 -81.09151653965,26.817194884973,0 -81.09151653965,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E7780001FD">
+                <name>East 6</name>
+                <description>10 Acre Farm · East Irrigation Pump</description>
+                <styleUrl>#__managed_style_060A4D88E541F1558C08</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.091267785227,26.816540100443,0 -81.09105275603901,26.816540100443,0 -81.09105275603901,26.817194884973,0 -81.091267785227,26.817194884973,0 -81.091267785227,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E7780001FE">
+                <name>East 7</name>
+                <description>10 Acre Farm · East Irrigation Pump</description>
+                <styleUrl>#__managed_style_060A4D88E541F1558C08</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.091019030803,26.816540100443,0 -81.09080400161599,26.816540100443,0 -81.09080400161599,26.817194884973,0 -81.091019030803,26.817194884973,0 -81.091019030803,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+            </Folder>
+            <Folder id="5ECF04E7780001FF">
+              <name>West Pump Zones</name>
+              <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+              <Placemark id="5ECF04E778000200">
+                <name>West 1</name>
+                <description>10 Acre Farm · West Irrigation Pump</description>
+                <styleUrl>#__managed_style_0CBDBC804F41F1558C0C</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.093123471843,26.816540100443,0 -81.092908442656,26.816540100443,0 -81.092908442656,26.817194884973,0 -81.093123471843,26.817194884973,0 -81.093123471843,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E778000201">
+                <name>West 2</name>
+                <description>10 Acre Farm · West Irrigation Pump</description>
+                <styleUrl>#__managed_style_0CBDBC804F41F1558C0C</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.09337222626699,26.816540100443,0 -81.09315719707899,26.816540100443,0 -81.09315719707899,26.817194884973,0 -81.09337222626699,26.817194884973,0 -81.09337222626699,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E778000202">
+                <name>West 3</name>
+                <description>10 Acre Farm · West Irrigation Pump</description>
+                <styleUrl>#__managed_style_0CBDBC804F41F1558C0C</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.09362098069001,26.816540100443,0 -81.093405951503,26.816540100443,0 -81.093405951503,26.817194884973,0 -81.09362098069001,26.817194884973,0 -81.09362098069001,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E778000203">
+                <name>West 4</name>
+                <description>10 Acre Farm · West Irrigation Pump</description>
+                <styleUrl>#__managed_style_0CBDBC804F41F1558C0C</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.093869735114,26.816540100443,0 -81.093654705926,26.816540100443,0 -81.093654705926,26.817194884973,0 -81.093869735114,26.817194884973,0 -81.093869735114,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E778000204">
+                <name>West 5</name>
+                <description>10 Acre Farm · West Irrigation Pump</description>
+                <styleUrl>#__managed_style_0CBDBC804F41F1558C0C</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.094118489537,26.816540100443,0 -81.09390346035001,26.816540100443,0 -81.09390346035001,26.817194884973,0 -81.094118489537,26.817194884973,0 -81.094118489537,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E778000205">
+                <name>West 6</name>
+                <description>10 Acre Farm · West Irrigation Pump</description>
+                <styleUrl>#__managed_style_0CBDBC804F41F1558C0C</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.094367243961,26.816540100443,0 -81.094152214773,26.816540100443,0 -81.094152214773,26.817194884973,0 -81.094367243961,26.817194884973,0 -81.094367243961,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+              <Placemark id="5ECF04E778000206">
+                <name>West 7</name>
+                <description>10 Acre Farm · West Irrigation Pump</description>
+                <styleUrl>#__managed_style_0CBDBC804F41F1558C0C</styleUrl>
+                <Polygon>
+                  <outerBoundaryIs>
+                    <LinearRing>
+                      <coordinates>
+											-81.094615998384,26.816540100443,0 -81.094400969197,26.816540100443,0 -81.094400969197,26.817194884973,0 -81.094615998384,26.817194884973,0 -81.094615998384,26.816540100443,0
+										</coordinates>
+                    </LinearRing>
+                  </outerBoundaryIs>
+                </Polygon>
+              </Placemark>
+            </Folder>
+          </Folder>
+          <Folder id="5ECF04E778000207">
+            <name>Zone Labels</name>
+            <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+            <Placemark id="5ECF04E778000208">
+              <name>E-01</name>
+              <description>East 1</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.092404042751,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E778000209">
+              <name>E-02</name>
+              <description>East 2</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.09215528832701,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E77800020A">
+              <name>E-03</name>
+              <description>East 3</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.09190653390399,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E77800020B">
+              <name>E-04</name>
+              <description>East 4</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.09165777948,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E77800020C">
+              <name>E-05</name>
+              <description>East 5</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.091409025057,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E77800020D">
+              <name>E-06</name>
+              <description>East 6</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.091160270633,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E77800020E">
+              <name>E-07</name>
+              <description>East 7</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.09091151621,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E77800020F">
+              <name>W-01</name>
+              <description>West 1</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.09301595724899,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E778000210">
+              <name>W-02</name>
+              <description>West 2</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.093264711673,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E778000211">
+              <name>W-03</name>
+              <description>West 3</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.093513466096,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E778000212">
+              <name>W-04</name>
+              <description>West 4</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.09376222052001,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E778000213">
+              <name>W-05</name>
+              <description>West 5</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.094010974943,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E778000214">
+              <name>W-06</name>
+              <description>West 6</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.094259729367,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E778000215">
+              <name>W-07</name>
+              <description>West 7</description>
+              <styleUrl>#__managed_style_157B4A039641F1558C06</styleUrl>
+              <Point>
+                <coordinates>-81.09450848378999,26.816867492708,0</coordinates>
+              </Point>
+            </Placemark>
+          </Folder>
+          <Folder id="5ECF04E778000216">
+            <name>Irrigation Pumps</name>
+            <open>1</open>
+            <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+            <Placemark id="5ECF04E778000217">
+              <name>East Pump</name>
+              <description>10 Acre Farm irrigation pump</description>
+              <styleUrl>#__managed_style_12662412FA41F1558C08</styleUrl>
+              <Point>
+                <coordinates>-81.092663231477,26.816694806319,4.86688</coordinates>
+              </Point>
+            </Placemark>
+            <Placemark id="5ECF04E779000218">
+              <name>West Pump</name>
+              <description>10 Acre Farm irrigation pump</description>
+              <styleUrl>#__managed_style_12662412FA41F1558C08</styleUrl>
+              <Point>
+                <coordinates>-81.092803234520,26.816698071109,4.86976</coordinates>
+              </Point>
+            </Placemark>
+          </Folder>
+          <Folder id="5ECF04E779000219">
+            <name>Roads &amp; Access Lanes</name>
+            <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+          </Folder>
+          <Folder id="5ECF04E77900021B">
+            <name>Buildings &amp; Operational Areas</name>
+            <open>1</open>
+            <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+            <Placemark id="5ECF04E77900021C">
+              <name>East Side</name>
+              <styleUrl>#__managed_style_2B0AFE7AF241F1558C0C</styleUrl>
+              <Polygon>
+                <outerBoundaryIs>
+                  <LinearRing>
+                    <coordinates>
+										-81.092511557344,26.816540100443,0 -81.09080400161599,26.816540100443,0 -81.09080400161599,26.817194884973,0 -81.092511557344,26.817194884973,0 -81.092511557344,26.816540100443,0
+									</coordinates>
+                  </LinearRing>
+                </outerBoundaryIs>
+              </Polygon>
+            </Placemark>
+            <Placemark id="5ECF04E77900021D">
+              <name>West Side</name>
+              <styleUrl>#__managed_style_11C7C1EC0241F1558C0B</styleUrl>
+              <Polygon>
+                <outerBoundaryIs>
+                  <LinearRing>
+                    <coordinates>
+										-81.094615998384,26.816540100443,0 -81.092908442656,26.816540100443,0 -81.092908442656,26.817194884973,0 -81.094615998384,26.817194884973,0 -81.094615998384,26.816540100443,0
+									</coordinates>
+                  </LinearRing>
+                </outerBoundaryIs>
+              </Polygon>
+            </Placemark>
+            <Placemark id="0F7C9CD76C41F159CE78">
+              <name>East Pump House</name>
+              <description><![CDATA[<div>East Pump House</div>]]></description>
+              <LookAt>
+                <longitude>-81.09265547185532</longitude>
+                <latitude>26.81671234774605</latitude>
+                <altitude>4.898013001893895</altitude>
+                <heading>0</heading>
+                <tilt>0</tilt>
+                <gx:fovy>30.00012297450719</gx:fovy>
+                <range>53.42601213382297</range>
+                <altitudeMode>absolute</altitudeMode>
+              </LookAt>
+              <styleUrl>#__managed_style_093069E21E41F15A3D8F</styleUrl>
+              <Polygon>
+                <outerBoundaryIs>
+                  <LinearRing>
+                    <coordinates>-81.092683317769,26.816671632708,0 -81.092643145186,26.816671632708,0 -81.092643145186,26.816717979929,0 -81.092683317769,26.816717979929,0 -81.092683317769,26.816671632708,0</coordinates>
+                  </LinearRing>
+                </outerBoundaryIs>
+              </Polygon>
+            </Placemark>
+            <Placemark id="06512DADBE41F15B8FC8">
+              <name>West Pump House</name>
+              <LookAt>
+                <longitude>-81.09273373789667</longitude>
+                <latitude>26.81670776169139</latitude>
+                <altitude>4.79467859215336</altitude>
+                <heading>0</heading>
+                <tilt>0</tilt>
+                <gx:fovy>30.00012297450719</gx:fovy>
+                <range>53.52934366616864</range>
+                <altitudeMode>absolute</altitudeMode>
+              </LookAt>
+              <styleUrl>#__managed_style_0009E4109141F12C5AD6</styleUrl>
+              <Polygon>
+                <outerBoundaryIs>
+                  <LinearRing>
+                    <coordinates>-81.092823320812,26.816674897499,0 -81.092783148229,26.816674897499,0 -81.092783148229,26.816721244720,0 -81.092823320812,26.816721244720,0 -81.092823320812,26.816674897499,0</coordinates>
+                  </LinearRing>
+                </outerBoundaryIs>
+              </Polygon>
+            </Placemark>
+          </Folder>
+          <Placemark id="0098B5C90D41F15DF0F4">
+            <name>Storage Shed</name>
+            <LookAt>
+              <longitude>-81.09259677540594</longitude>
+              <latitude>26.81701140605433</latitude>
+              <altitude>5.830113974188631</altitude>
+              <heading>0</heading>
+              <tilt>0</tilt>
+              <gx:fovy>30.00012297450719</gx:fovy>
+              <range>154.9438046192154</range>
+              <altitudeMode>absolute</altitudeMode>
+            </LookAt>
+            <styleUrl>#__managed_style_0009E4109141F12C5AD6</styleUrl>
+            <Polygon>
+              <outerBoundaryIs>
+                <LinearRing>
+                  <coordinates>-81.092766441964,26.816959174914,0 -81.092607087216,26.816959174914,0 -81.092607087216,26.817139226634,0 -81.092766441964,26.817139226634,0 -81.092766441964,26.816959174914,0</coordinates>
+                </LinearRing>
+              </outerBoundaryIs>
+            </Polygon>
+          </Placemark>
+          <Folder id="5ECF04E77900021E">
+            <name>Property &amp; Farm Borders</name>
+            <open>1</open>
+            <styleUrl>#__managed_style_09C79C956441F12B8A64</styleUrl>
+          </Folder>
+          <Placemark id="5ECF04E77900021F">
+            <name>1866 Baker Hwy</name>
+            <description><![CDATA[<div>Property address for the 10 Acre Farm</div>]]></description>
+            <LookAt>
+              <longitude>-81.0927008</longitude>
+              <latitude>26.8170514</latitude>
+              <altitude>0</altitude>
+              <heading>0</heading>
+              <tilt>0</tilt>
+              <gx:fovy>35</gx:fovy>
+              <range>930.755669786318</range>
+              <altitudeMode>relativeToGround</altitudeMode>
+            </LookAt>
+            <styleUrl>#__managed_style_1C02922D6241F1558C0C</styleUrl>
+            <Point>
+              <altitudeMode>relativeToGround</altitudeMode>
+              <coordinates>-81.0927008,26.8170514,0</coordinates>
+            </Point>
+          </Placemark>
+        </Folder>
+      </Folder>
+    </Folder>
+  </Document>
+</kml>
